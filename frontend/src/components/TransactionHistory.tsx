@@ -5,6 +5,18 @@ import { createPublicClient, http, parseAbiItem } from "viem";
 import { CONTRACT_ADDRESSES, STREAM_ABI } from "../config/contracts";
 import { paseo } from "../config/wagmi";
 import { formatUSDT } from "../hooks/useStream";
+import { motion } from "framer-motion";
+import { 
+  FileText, 
+  PlusCircle, 
+  ArrowDownCircle, 
+  XCircle, 
+  History, 
+  ExternalLink,
+  ShieldCheck,
+  Cpu,
+  AlertCircle
+} from "lucide-react";
 
 type TxRecord = {
   hash: `0x${string}`;
@@ -16,11 +28,6 @@ type TxRecord = {
   timestamp?: number;
 };
 
-/**
- * TransactionHistory – fetches and renders a user's recent stream events
- * directly from the chain using viem's getLogs API.
- * Shows a "Fee covered by yield pool" badge on subsidised withdrawals.
- */
 export default function TransactionHistory() {
   const { address } = useAccount();
   const chainId     = useChainId();
@@ -40,7 +47,6 @@ export default function TransactionHistory() {
       const latest = await client.getBlockNumber();
       const fromBlock = latest > 10000n ? latest - 10000n : 0n;
 
-      // Fetch all three event types in parallel
       const [created, withdrawn, cancelled] = await Promise.all([
         client.getLogs({
           address: streamAddress,
@@ -104,7 +110,6 @@ export default function TransactionHistory() {
         });
       }
 
-      // Sort descending by block number
       return records.sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : 1));
     },
   });
@@ -112,38 +117,43 @@ export default function TransactionHistory() {
   if (!address) return null;
 
   return (
-    <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6">
-      <h2 className="text-lg font-semibold mb-1">Transaction History</h2>
-      <p className="text-sm text-[#888] mb-6">
-        Your recent stream activity. Subsidised transactions are marked{" "}
-        <span className="text-green-400">⛽ Fee covered by yield pool</span>.
-      </p>
+    <div className="glass p-8 rounded-[32px] border border-white/10 shadow-2xl">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold font-space flex items-center gap-3">
+           <History className="w-6 h-6 text-primary-pink" />
+           Protocol Activity
+        </h2>
+        <p className="text-sm text-white/40 mt-1 font-inter">
+          Realtime on-chain events from <span className="text-primary-blue font-bold">Paseo Layer.</span>
+        </p>
+      </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-[#E6007A] border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-10 h-10 border-4 border-white/5 border-t-primary-pink rounded-full animate-spin shadow-glow-pink" />
+          <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Indexing Ledger...</p>
         </div>
       )}
 
       {error && (
-        <div className="px-4 py-3 rounded-xl bg-[#1A0A0A] border border-[#3A1A1A]">
-          <p className="text-red-400 text-sm">
-            Could not fetch events: {(error as Error).message}
-          </p>
+        <div className="p-6 rounded-2xl bg-red-500/5 border border-red-500/20 text-center">
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-400 text-sm font-bold uppercase tracking-widest">ledger Sync Failed</p>
+          <p className="text-white/20 text-xs mt-1">{(error as Error).message}</p>
         </div>
       )}
 
       {events && events.length === 0 && !isLoading && (
-        <div className="text-center py-12 text-[#555]">
-          <div className="text-4xl mb-3">📜</div>
-          <p className="text-sm">No transactions found in the last 10,000 blocks</p>
+        <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-3xl">
+          <FileText className="w-12 h-12 text-white/10 mx-auto mb-4" />
+          <p className="text-white/40 font-medium uppercase tracking-widest text-xs">No activity signatures detected in this epoch</p>
         </div>
       )}
 
       {events && events.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {events.map((tx, i) => (
-            <TxRow key={`${tx.hash}-${i}`} tx={tx} chainId={chainId} />
+            <TxRow key={`${tx.hash}-${i}`} tx={tx} chainId={chainId} index={i} />
           ))}
         </div>
       )}
@@ -153,60 +163,70 @@ export default function TransactionHistory() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function TxRow({ tx, chainId }: { tx: TxRecord; chainId: number }) {
+function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: number }) {
   const explorerBase =
     chainId === 420420421
       ? "https://blockscout.paseo.polkadot.com/tx"
       : "#";
 
   const typeConfig = {
-    StreamCreated:   { icon: "💫", label: "Stream Created",   color: "text-blue-400"  },
-    StreamWithdrawn: { icon: "💸", label: "Withdrawn",        color: "text-green-400" },
-    StreamCancelled: { icon: "❌", label: "Stream Cancelled", color: "text-red-400"   },
-    BridgeOut:       { icon: "🌉", label: "Bridge Out",       color: "text-purple-400"},
+    StreamCreated:   { icon: <PlusCircle className="w-5 h-5" />, label: "Flow Initialized",   color: "text-blue-400", bg: "bg-blue-400/10"  },
+    StreamWithdrawn: { icon: <ArrowDownCircle className="w-5 h-5" />, label: "Value Extracted",   color: "text-green-400", bg: "bg-green-400/10" },
+    StreamCancelled: { icon: <XCircle className="w-5 h-5" />, label: "Flow Terminated", color: "text-red-400", bg: "bg-red-400/10"   },
+    BridgeOut:       { icon: <Cpu className="w-5 h-5" />, label: "Cross-Chain Sync", color: "text-purple-400", bg: "bg-purple-400/10"},
   }[tx.type];
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#3A3A3A] transition-colors">
-      <div className="text-2xl">{typeConfig.icon}</div>
+    <motion.div 
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="group flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/20 transition-all"
+    >
+      <div className={`w-12 h-12 rounded-xl ${typeConfig.bg} flex items-center justify-center ${typeConfig.color} shadow-sm transition-transform group-hover:scale-110`}>
+        {typeConfig.icon}
+      </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-sm font-medium ${typeConfig.color}`}>
+        <div className="flex items-center gap-3 flex-wrap mb-1">
+          <span className={`text-sm font-bold font-space uppercase tracking-tight ${typeConfig.color}`}>
             {typeConfig.label}
           </span>
           {tx.streamId !== undefined && (
-            <span className="text-xs text-[#555] font-mono">
-              #{tx.streamId.toString()}
+            <span className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-mono font-bold text-white/40 border border-white/5">
+              STREAM-ID: {tx.streamId.toString()}
             </span>
           )}
           {tx.type === "StreamWithdrawn" && tx.gasSubsidised && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-medium">
-              ⛽ Fee covered by yield pool
-            </span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-blue/10 border border-primary-blue/20 text-[10px] font-black uppercase tracking-tighter text-primary-blue">
+              <ShieldCheck className="w-3 h-3" />
+              Gas Substituted
+            </div>
           )}
         </div>
-        <p className="text-xs text-[#555] font-mono mt-0.5">
-          Block #{tx.blockNumber.toString()} ·{" "}
-          {tx.hash.slice(0, 10)}…{tx.hash.slice(-8)}
-        </p>
+        <div className="flex items-center gap-2 text-[10px] font-mono text-white/20 uppercase tracking-widest">
+          <span>Block: {tx.blockNumber.toString()}</span>
+          <span className="opacity-50">·</span>
+          <span className="hover:text-white/60 transition-colors cursor-help">{tx.hash.slice(0, 14)}…{tx.hash.slice(-10)}</span>
+        </div>
       </div>
 
-      <div className="text-right flex-shrink-0">
+      <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 flex-shrink-0">
         {tx.amount !== undefined && (
-          <p className="text-sm font-medium text-white">
-            {formatUSDT(tx.amount)} USDT
+          <p className="text-lg font-bold font-space text-white">
+            {formatUSDT(tx.amount)} <span className="text-[10px] text-white/20 font-mono">USDT</span>
           </p>
         )}
         <a
           href={`${explorerBase}/${tx.hash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-[#555] hover:text-[#E6007A] transition-colors"
+          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-primary-pink transition-colors group/link"
         >
-          View →
+          Signature
+          <ExternalLink className="w-3 h-3 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
         </a>
       </div>
-    </div>
+    </motion.div>
   );
 }

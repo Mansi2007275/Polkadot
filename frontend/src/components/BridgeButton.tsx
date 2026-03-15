@@ -3,6 +3,8 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadCont
 import { parseUnits, toHex, stringToBytes, isAddress } from "viem";
 import { CONTRACT_ADDRESSES, BRIDGE_ABI, ERC20_ABI } from "../config/contracts";
 import { formatUSDT } from "../hooks/useStream";
+import { motion, AnimatePresence } from "framer-motion";
+import { Repeat, ArrowRightLeft, Globe, Send, CheckCircle, Info, Database, Zap, ArrowRight } from "lucide-react";
 
 /** Well-known parachain IDs on Polkadot. */
 const PARACHAINS = [
@@ -12,10 +14,6 @@ const PARACHAINS = [
   { name: "Moonbeam",   id: 2004, description: "EVM-compatible parachain"      },
 ];
 
-/**
- * BridgeButton – UI for bridging USDT between Polkadot Hub and parachains
- * via the StablecoinBridge contract and XCM precompiles.
- */
 export default function BridgeButton() {
   const { address } = useAccount();
   const chainId     = useChainId();
@@ -59,7 +57,6 @@ export default function BridgeButton() {
   React.useEffect(() => {
     if (approveSuccess && txStatus === "approving") {
       setTxStatus("bridging");
-      // Derive bytes32 beneficiary from SS58 or hex address
       const beneficiaryBytes = deriveBeneficiary(beneficiary);
       bridgeWrite({
         address: bridgeAddr,
@@ -104,143 +101,183 @@ export default function BridgeButton() {
   const selectedChain = PARACHAINS.find((p) => p.id === destParaId);
 
   return (
-    <div className="space-y-6">
-      {/* ── Bridge Stats ── */}
-      <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-1">XCM Stablecoin Bridge</h2>
-        <p className="text-sm text-[#888] mb-6">
-          Bridge USDT from Polkadot Hub to any parachain using XCM precompiles.
-        </p>
+    <div className="max-w-5xl mx-auto space-y-8">
+      {/* ── Bridge Header & Stats ── */}
+      <div className="glass p-10 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-blue/5 blur-[100px] -z-10" />
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+           <div>
+              <h2 className="text-3xl font-bold font-space flex items-center gap-4">
+                 <Repeat className="w-8 h-8 text-primary-blue" />
+                 XCM Asset Bridge
+              </h2>
+              <p className="text-white/40 mt-3 max-w-xl font-inter leading-relaxed">
+                 Seamlessly transfer USDT between Polkadot Hub and integrated Parachains using 
+                 trustless Cross-Consensus Messaging (XCM) precompiles.
+              </p>
+           </div>
+           <div className="flex gap-4">
+              <StatCard 
+                 label="Pool Buffer" 
+                 value={formatUSDT(bridgeBalance as bigint | undefined)} 
+                 icon={<Database className="w-4 h-4 text-white/20" />}
+              />
+              <StatCard 
+                 label="Protocol Throughput" 
+                 value={formatUSDT(totalOut as bigint | undefined)} 
+                 icon={<Zap className="w-4 h-4 text-primary-pink" />}
+                 highlight
+              />
+           </div>
+        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="px-4 py-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A]">
-            <p className="text-xs text-[#555] mb-1">Bridge Liquidity</p>
-            <p className="text-sm font-semibold text-white">
-              {formatUSDT(bridgeBalance as bigint | undefined)} USDT
-            </p>
-          </div>
-          <div className="px-4 py-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A]">
-            <p className="text-xs text-[#555] mb-1">Total Bridged Out</p>
-            <p className="text-sm font-semibold text-[#E6007A]">
-              {formatUSDT(totalOut as bigint | undefined)} USDT
-            </p>
-          </div>
+        {/* ── Bridge Form ── */}
+        <div className="relative">
+          {txStatus === "done" ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-16 bg-white/[0.02] border border-white/5 rounded-[32px]"
+            >
+              <div className="w-24 h-24 rounded-full bg-primary-pink/10 border border-primary-pink/30 flex items-center justify-center mx-auto mb-8 shadow-glow-pink">
+                <CheckCircle className="w-12 h-12 text-primary-pink" />
+              </div>
+              <h3 className="text-3xl font-bold font-space mb-3 text-white">XCM Message Dispatched</h3>
+              <p className="text-white/40 text-sm mb-10 max-w-md mx-auto leading-relaxed">
+                Tokens are currently traversing the relay chain. Estimated arrival on {selectedChain?.name} in <span className="text-white font-bold">12 seconds</span>.
+              </p>
+              <button
+                onClick={() => setTxStatus("idle")}
+                className="px-12 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold font-space hover:bg-white/10 transition-all active:scale-95"
+              >
+                Send Another Artifact
+              </button>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-8">
+                {/* Destination Selector */}
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Terminal Parachain</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {PARACHAINS.map((chain) => (
+                      <button
+                        key={chain.id}
+                        type="button"
+                        onClick={() => setDestParaId(chain.id)}
+                        disabled={isLoading}
+                        className={`p-4 rounded-2xl text-left transition-all border ${
+                          destParaId === chain.id
+                            ? "bg-primary-blue/10 border-primary-blue/40 shadow-glow-blue/10"
+                            : "bg-white/[0.03] border-white/10 text-white/40 hover:border-white/20"
+                        }`}
+                      >
+                        <p className={`text-sm font-bold font-space ${destParaId === chain.id ? 'text-white' : 'text-white/40'}`}>{chain.name}</p>
+                        <p className="text-[10px] font-mono mt-1 opacity-60">ID: {chain.id}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* XCM Architecture Card */}
+                <div className="p-6 rounded-[24px] bg-white/[0.03] border border-white/5 space-y-4">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                         <Globe className="w-5 h-5 text-white/40" />
+                      </div>
+                      <div>
+                         <p className="text-xs font-bold text-white">Cross-Chain Precompile</p>
+                         <p className="text-[10px] text-white/20 font-mono">XCM V3 · ReserveTransferAssets</p>
+                      </div>
+                   </div>
+                   <p className="text-[10px] text-white/40 leading-relaxed italic">
+                      Automated execution via <code className="text-primary-blue">0x...0800</code>. Tokens travel from Polkadot Hub → Relay → {selectedChain?.name}.
+                   </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Beneficiary */}
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Destination Beneficiary</label>
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      value={beneficiary}
+                      onChange={(e) => setBeneficiary(e.target.value)}
+                      placeholder="SS58 or Hex address..."
+                      disabled={isLoading}
+                      className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/10 focus:border-primary-pink/50 focus:bg-white/[0.05] focus:outline-none focus:shadow-glow-pink transition-all font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Asset Quantity</label>
+                  <div className="relative group">
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      disabled={isLoading}
+                      className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/10 focus:border-primary-purple/50 focus:bg-white/[0.05] focus:outline-none focus:shadow-glow-purple transition-all font-space font-bold pr-16"
+                    />
+                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-black">USDT</span>
+                  </div>
+                </div>
+
+                {errorMsg && (
+                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-bold uppercase tracking-widest text-center">
+                    {errorMsg}
+                  </div>
+                )}
+
+                {/* Submit Action */}
+                <button
+                  onClick={handleBridge}
+                  disabled={isLoading}
+                  className="w-full py-5 rounded-[24px] bg-gradient-to-r from-primary-blue via-primary-purple to-primary-pink text-white font-bold font-space uppercase tracking-[0.2em] shadow-xl hover:shadow-glow-blue transition-all active:scale-95 disabled:opacity-50 group"
+                >
+                  {isLoading ? (
+                     <span className="flex items-center justify-center gap-3">
+                       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
+                       Synchronizing...
+                     </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                       Bridge to {selectedChain?.name}
+                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  )}
+                </button>
+                
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/5">
+                   <Info className="w-4 h-4 text-white/20" />
+                   <p className="text-[10px] text-white/20 uppercase font-bold tracking-tight">Small XCM delivery fee will be deducted by the target chain.</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* ── Bridge Form ── */}
-      <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6">
-        <h3 className="text-base font-semibold mb-5">Bridge USDT to Parachain</h3>
-
-        {txStatus === "done" ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🌉</span>
-            </div>
-            <h3 className="text-lg font-semibold mb-2 text-green-400">XCM Message Sent!</h3>
-            <p className="text-[#888] text-sm mb-6">
-              Your USDT is being bridged. It will arrive on {selectedChain?.name ?? "the destination"}
-              {" "}within 1-2 blocks (~12 seconds on Paseo).
-            </p>
-            <button
-              onClick={() => setTxStatus("idle")}
-              className="px-6 py-2 rounded-lg bg-[#E6007A] text-white font-medium"
-            >
-              Bridge More
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Destination Parachain */}
-            <div>
-              <label className="block text-sm text-[#888] mb-2">Destination Parachain</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PARACHAINS.map((chain) => (
-                  <button
-                    key={chain.id}
-                    type="button"
-                    onClick={() => setDestParaId(chain.id)}
-                    disabled={isLoading}
-                    className={`px-4 py-3 rounded-xl text-left transition-all ${
-                      destParaId === chain.id
-                        ? "bg-[#E6007A]/20 border border-[#E6007A]/60 text-white"
-                        : "bg-[#1A1A1A] border border-[#2A2A2A] text-[#888] hover:text-white hover:border-[#444]"
-                    }`}
-                  >
-                    <p className="text-sm font-medium">{chain.name}</p>
-                    <p className="text-xs text-[#555] mt-0.5">Para ID: {chain.id}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Beneficiary */}
-            <div>
-              <label className="block text-sm text-[#888] mb-1.5">
-                Beneficiary (32-byte hex or SS58 address on {selectedChain?.name})
-              </label>
-              <input
-                type="text"
-                value={beneficiary}
-                onChange={(e) => setBeneficiary(e.target.value)}
-                placeholder="0x... or 5Grwva..."
-                disabled={isLoading}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white text-sm placeholder-[#555] focus:border-[#E6007A] focus:outline-none transition-colors"
-              />
-            </div>
-
-            {/* Amount */}
-            <div>
-              <label className="block text-sm text-[#888] mb-1.5">Amount (USDT)</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="10"
-                  min="0"
-                  disabled={isLoading}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white text-sm placeholder-[#555] focus:border-[#E6007A] focus:outline-none transition-colors pr-16"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[#888]">USDT</span>
-              </div>
-            </div>
-
-            {/* XCM info */}
-            <div className="px-4 py-3 rounded-xl bg-[#0A0A1A] border border-[#1A1A3A]">
-              <p className="text-xs text-[#6A6A9F] font-medium mb-1">XCM Precompile: 0x0000…0800</p>
-              <p className="text-xs text-[#555]">
-                Uses <code className="font-mono text-[#888]">xcmSend()</code> with
-                ReserveTransferAssets to {selectedChain?.name} (Para {destParaId}).
-                Fees are deducted from the transferred amount.
-              </p>
-            </div>
-
-            {errorMsg && (
-              <div className="px-4 py-3 rounded-xl bg-[#1A0A0A] border border-[#3A1A1A]">
-                <p className="text-xs text-red-400">{errorMsg}</p>
-              </div>
-            )}
-
-            {isLoading && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1A1A1A]">
-                <div className="w-4 h-4 border-2 border-[#E6007A] border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-[#888]">
-                  {txStatus === "approving" ? "Approving token spend…" : "Sending XCM message…"}
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={handleBridge}
-              disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-[#E6007A] text-white font-semibold hover:bg-[#CC006A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Processing…" : `Bridge to ${selectedChain?.name ?? "Parachain"}`}
-            </button>
-          </div>
-        )}
-      </div>
+function StatCard({ label, value, icon, highlight }: { label: string; value: string; icon: React.ReactNode; highlight?: boolean }) {
+  return (
+    <div className="px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 shadow-inner">
+       <div className="flex items-center gap-2 mb-2">
+          {icon}
+          <span className="text-[10px] font-black uppercase tracking-widest text-white/20">{label}</span>
+       </div>
+       <p className={`text-lg font-bold font-space ${highlight ? 'text-primary-pink' : 'text-white'}`}>
+          {value} <span className="text-[10px] text-white/20 font-mono">USDT</span>
+       </p>
     </div>
   );
 }
@@ -251,10 +288,8 @@ function deriveBeneficiary(input: string): `0x${string}` {
     return input as `0x${string}`;
   }
   if (input.startsWith("0x") && input.length === 42) {
-    // Pad EVM address to bytes32
     return `0x${input.slice(2).padStart(64, "0")}` as `0x${string}`;
   }
-  // Encode arbitrary string to bytes32
   const bytes = stringToBytes(input.slice(0, 32).padEnd(32, "\0"));
   return toHex(bytes) as `0x${string}`;
 }
