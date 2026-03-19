@@ -6,12 +6,12 @@ import { CONTRACT_ADDRESSES, STREAM_ABI } from "../config/contracts";
 import { paseo } from "../config/wagmi";
 import { formatUSDT } from "../hooks/useStream";
 import { motion } from "framer-motion";
-import { 
-  FileText, 
-  PlusCircle, 
-  ArrowDownCircle, 
-  XCircle, 
-  History, 
+import {
+  FileText,
+  PlusCircle,
+  ArrowDownCircle,
+  XCircle,
+  History,
   ExternalLink,
   ShieldCheck,
   Cpu,
@@ -33,23 +33,28 @@ export default function TransactionHistory() {
   const chainId     = useChainId();
   const networkKey  = chainId === 420420421 ? "paseo" : "hardhat";
   const streamAddress = CONTRACT_ADDRESSES[networkKey]?.MicropaymentStream;
+  const bridgeAddress = CONTRACT_ADDRESSES[networkKey]?.StablecoinBridge;
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ["txHistory", address, networkKey],
-    enabled: !!address && !!streamAddress,
+    enabled: !!address && !!(streamAddress && bridgeAddress),
     staleTime: 30_000,
     queryFn: async (): Promise<TxRecord[]> => {
       const client = createPublicClient({
-        chain: paseo,
-        transport: http(),
+        chain: networkKey === "paseo" ? paseo : undefined,
+        transport: http(
+          networkKey === "paseo"
+            ? (import.meta.env.VITE_PASEO_RPC_URL || "https://paseo.rpc.polkadot.com")
+            : (import.meta.env.VITE_HARDHAT_RPC_URL || "http://127.0.0.1:8545")
+        ),
       });
 
       const latest = await client.getBlockNumber();
       const fromBlock = latest > 10000n ? latest - 10000n : 0n;
 
-      const [created, withdrawn, cancelled] = await Promise.all([
+      const [created, withdrawn, cancelled, bridgeOut] = await Promise.all([
         client.getLogs({
-          address: streamAddress,
+          address: streamAddress!,
           event: parseAbiItem(
             "event StreamCreated(uint256 indexed streamId, address indexed sender, address indexed recipient, address token, uint256 deposit, uint256 startTime, uint256 stopTime, uint256 ratePerSecond)"
           ),
@@ -58,7 +63,7 @@ export default function TransactionHistory() {
           toBlock: "latest",
         }).catch(() => []),
         client.getLogs({
-          address: streamAddress,
+          address: streamAddress!,
           event: parseAbiItem(
             "event StreamWithdrawn(uint256 indexed streamId, address indexed recipient, uint256 amount, bool gasSubsidised)"
           ),
@@ -67,9 +72,18 @@ export default function TransactionHistory() {
           toBlock: "latest",
         }).catch(() => []),
         client.getLogs({
-          address: streamAddress,
+          address: streamAddress!,
           event: parseAbiItem(
             "event StreamCancelled(uint256 indexed streamId, address indexed sender, uint256 senderRefund, uint256 recipientAmount)"
+          ),
+          args: { sender: address },
+          fromBlock,
+          toBlock: "latest",
+        }).catch(() => []),
+        client.getLogs({
+          address: bridgeAddress!,
+          event: parseAbiItem(
+            "event BridgeOutInitiated(address indexed token, address indexed sender, uint32 destParaId, bytes32 beneficiary, uint256 amount)"
           ),
           args: { sender: address },
           fromBlock,
@@ -110,6 +124,15 @@ export default function TransactionHistory() {
         });
       }
 
+      for (const log of bridgeOut) {
+        records.push({
+          hash: log.transactionHash!,
+          type: "BridgeOut",
+          amount: (log.args as any).amount,
+          blockNumber: log.blockNumber!,
+        });
+      }
+
       return records.sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : 1));
     },
   });
@@ -117,7 +140,7 @@ export default function TransactionHistory() {
   if (!address) return null;
 
   return (
-    <div className="glass p-8 rounded-[32px] border border-white/10 shadow-2xl">
+    <div className="terminal-card p-6">
       <div className="mb-8">
         <h2 className="text-2xl font-bold font-space flex items-center gap-3">
            <History className="w-6 h-6 text-primary-pink" />
@@ -136,7 +159,7 @@ export default function TransactionHistory() {
       )}
 
       {error && (
-        <div className="p-6 rounded-2xl bg-red-500/5 border border-red-500/20 text-center">
+        <div className="p-6  bg-red-500/5 border border-red-500/20 text-center">
           <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
           <p className="text-red-400 text-sm font-bold uppercase tracking-widest">ledger Sync Failed</p>
           <p className="text-white/20 text-xs mt-1">{(error as Error).message}</p>
@@ -144,7 +167,7 @@ export default function TransactionHistory() {
       )}
 
       {events && events.length === 0 && !isLoading && (
-        <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-3xl">
+        <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 ">
           <FileText className="w-12 h-12 text-white/10 mx-auto mb-4" />
           <p className="text-white/40 font-medium uppercase tracking-widest text-xs">No activity signatures detected in this epoch</p>
         </div>
@@ -177,11 +200,11 @@ function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: n
   }[tx.type];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="group flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/20 transition-all"
+      className="group flex flex-col sm:flex-row sm:items-center gap-4 p-5  bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/20 transition-all"
     >
       <div className={`w-12 h-12 rounded-xl ${typeConfig.bg} flex items-center justify-center ${typeConfig.color} shadow-sm transition-transform group-hover:scale-110`}>
         {typeConfig.icon}

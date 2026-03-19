@@ -61,6 +61,12 @@ interface IStakingPrecompile {
     function withdrawUnbonded(uint32 numSlashingSpans) external returns (bool);
     /// @notice Nominate a set of validators.
     function nominate(address[] calldata targets) external returns (bool);
+    /// @notice Query pending staking rewards for an account.
+    function pendingRewards(address staker) external view returns (uint256);
+    /// @notice Trigger payout of staking rewards for the caller.
+    function payout(address staker) external returns (bool);
+    /// @notice Query total staked amount for an account.
+    function stakedAmount(address staker) external view returns (uint256);
 }
 
 /**
@@ -143,6 +149,12 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
     /// @notice Authorised XCM message senders (relay chain sovereign accounts).
     mapping(address => bool) public trustedOrigins;
 
+    /// @notice Timestamp of last yield sync from staking precompile.
+    uint256 public lastYieldSync;
+
+    /// @notice Cumulative rewards swept into SubsidyPool from staking.
+    uint256 public totalRewardsSwept;
+
     // =========================================================================
     // Events
     // =========================================================================
@@ -164,6 +176,8 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
     event DotUnstaked(uint256 amount);
     event StakingYieldWithdrawn(uint256 amount, address indexed subsidyPool);
     event TrustedOriginUpdated(address indexed origin, bool trusted);
+    event YieldSynced(uint256 rewardAmount, uint256 timestamp);
+    event NativeAssetBridged(uint128 indexed assetId, address indexed sender, uint32 destParaId, uint256 amount);
 
     // =========================================================================
     // Errors
@@ -176,6 +190,8 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
     error InvalidOrigin(address origin);
     error InvalidAddress(address addr);
     error AlreadyBridged(bytes32 nonce);
+    error NoRewardsAvailable();
+    error PayoutFailed();
 
     // =========================================================================
     // Constructor
@@ -364,6 +380,82 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
     }
 
     // =========================================================================
+    // Live Staking Yield Sync (Precompile 0x801)
+    // =========================================================================
+
+    /**
+     * @notice Query the Staking Precompile for pending rewards and sweep them
+     *         into the SubsidyPool. Enables dynamic, real-time yield instead
+     *         of the simulated BASE_YIELD_BPS in SubsidyPool.
+     * @dev    Can be called by owner or by an authorized relayer/bot.
+     *         On Paseo testnet, the precompile may return 0 if no validators
+     *         are nominated — callers should handle gracefully.
+     */
+    function syncRealTimeYield() external nonReentrant {
+        if (subsidyPool == address(0)) revert InvalidAddress(subsidyPool);
+
+        uint256 rewardAmount = STAKING_PRECOMPILE.pendingRewards(address(this));
+        if (rewardAmount == 0) revert NoRewardsAvailable();
+
+        bool ok = STAKING_PRECOMPILE.payout(address(this));
+        if (!ok) revert PayoutFailed();
+
+        unchecked {
+            totalRewardsSwept += rewardAmount;
+        }
+        lastYieldSync = block.timestamp;
+
+        (bool sent,) = subsidyPool.call{value: rewardAmount}("");
+        if (!sent) {
+            revert StakingFailed();
+        }
+
+        emit YieldSynced(rewardAmount, block.timestamp);
+    }
+
+    /**
+     * @notice Sweep ERC-20 token yield to SubsidyPool (for wrapped reward tokens).
+     * @param token The reward token to sweep.
+     */
+    function sweepTokenYield(address token) external onlyOwner nonReentrant {
+        if (subsidyPool == address(0)) revert InvalidAddress(subsidyPool);
+        uint256 bal = IERC20(token).balanceOf(address(this));
+        if (bal == 0) revert ZeroAmount();
+
+        IERC20(token).safeTransfer(subsidyPool, bal);
+        unchecked { totalRewardsSwept += bal; }
+        lastYieldSync = block.timestamp;
+
+        emit YieldSynced(bal, block.timestamp);
+    }
+
+    // =========================================================================
+    // Staking Stats (View)
+    // =========================================================================
+
+    /**
+     * @notice Returns live staking metrics from the precompile.
+     * @return pendingRewards_ Unclaimed staking rewards.
+     * @return stakedAmount_   Total DOT currently bonded.
+     * @return totalSwept_     Cumulative rewards swept to SubsidyPool.
+     * @return lastSync_       Timestamp of last yield sync.
+     */
+    function getStakingStats() external view returns (
+        uint256 pendingRewards_,
+        uint256 stakedAmount_,
+        uint256 totalSwept_,
+        uint256 lastSync_
+    ) {
+        pendingRewards_ = STAKING_PRECOMPILE.pendingRewards(address(this));
+        stakedAmount_ = STAKING_PRECOMPILE.stakedAmount(address(this));
+        totalSwept_ = totalRewardsSwept;
+        lastSync_ = lastYieldSync;
+    }
+
+    /// @notice Accept native DOT for yield sweep.
+    receive() external payable {}
+
+    // =========================================================================
     // XCM Encoding Helpers
     // =========================================================================
 
@@ -453,9 +545,19 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
         if (value < 64) {
             return abi.encodePacked(uint8(value << 2));
         } else if (value < 16384) {
-            return abi.encodePacked(uint16((uint16(value) << 2) | 0x01));
+            uint16 enc = (uint16(value) << 2) | 0x01;
+            return abi.encodePacked(
+                bytes1(uint8(enc)),
+                bytes1(uint8(enc >> 8))
+            );
         } else {
-            return abi.encodePacked(uint8(0x02), uint32(value));
+            uint32 enc = (uint32(value) << 2) | 0x02;
+            return abi.encodePacked(
+                bytes1(uint8(enc)),
+                bytes1(uint8(enc >> 8)),
+                bytes1(uint8(enc >> 16)),
+                bytes1(uint8(enc >> 24))
+            );
         }
     }
 
@@ -466,14 +568,45 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
         if (value < 64) {
             return abi.encodePacked(uint8(value << 2));
         } else if (value < 16384) {
-            return abi.encodePacked(uint16((uint16(value) << 2) | 0x01));
+            uint16 enc = (uint16(value) << 2) | 0x01;
+            return abi.encodePacked(
+                bytes1(uint8(enc)),
+                bytes1(uint8(enc >> 8))
+            );
         } else if (value < 1073741824) {
-            return abi.encodePacked(uint32((uint32(value) << 2) | 0x02));
+            uint32 enc = (uint32(value) << 2) | 0x02;
+            return abi.encodePacked(
+                bytes1(uint8(enc)),
+                bytes1(uint8(enc >> 8)),
+                bytes1(uint8(enc >> 16)),
+                bytes1(uint8(enc >> 24))
+            );
         } else {
-            // Big-integer mode: 0x03 prefix + bytes
-            bytes memory valBytes = abi.encodePacked(uint128(value));
-            uint8 prefix = uint8(((valBytes.length - 4) << 2) | 0x03);
-            return abi.encodePacked(prefix, valBytes);
+            // Big-integer mode (little-endian, minimal bytes):
+            // prefix = ((byteLen - 4) << 2) | 0x03, followed by LE bytes.
+            uint256 tmp = value;
+            uint8 byteLen = 0;
+            while (tmp > 0) {
+                unchecked {
+                    byteLen++;
+                    tmp >>= 8;
+                }
+            }
+            if (byteLen < 4) byteLen = 4;
+
+            bytes memory out = new bytes(byteLen + 1);
+            out[0] = bytes1(uint8(((byteLen - 4) << 2) | 0x03));
+
+            tmp = value;
+            for (uint256 i = 0; i < byteLen; ) {
+                out[i + 1] = bytes1(uint8(tmp));
+                unchecked {
+                    tmp >>= 8;
+                    ++i;
+                }
+            }
+
+            return out;
         }
     }
 

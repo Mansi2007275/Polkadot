@@ -12,7 +12,7 @@
     "node": "hardhat node",
     "clean": "hardhat clean",
     "typechain": "hardhat typechain",
-    "lint": "eslint 'scripts/**/*.ts' 'test/**/*.ts'"
+    "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",

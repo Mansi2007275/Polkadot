@@ -58,6 +58,9 @@ contract MicropaymentStream is ReentrancyGuard, Ownable {
     /// @notice Address of the SubsidyPool allowed to pay gas on behalf of users.
     address public subsidyPool;
 
+    /// @notice Timestamp when a stream was paused (0 when not paused).
+    mapping(uint256 => uint256) public pausedAt;
+
     // =========================================================================
     // Events
     // =========================================================================
@@ -188,7 +191,7 @@ contract MicropaymentStream is ReentrancyGuard, Ownable {
         if (token == address(0)) revert InvalidToken(token);
         if (startTime < block.timestamp || stopTime <= startTime)
             revert InvalidTimeRange(startTime, stopTime);
-        
+
         uint256 duration;
         unchecked { duration = stopTime - startTime; }
         if (deposit == 0 || deposit % duration != 0)
@@ -293,6 +296,7 @@ contract MicropaymentStream is ReentrancyGuard, Ownable {
     function pauseStream(
         uint256 streamId
     ) external streamExists(streamId) onlyActive(streamId) onlySender(streamId) {
+        pausedAt[streamId] = block.timestamp;
         streams[streamId].status = StreamStatus.Paused;
         emit StreamPaused(streamId, msg.sender);
     }
@@ -304,9 +308,20 @@ contract MicropaymentStream is ReentrancyGuard, Ownable {
     function resumeStream(
         uint256 streamId
     ) external streamExists(streamId) onlySender(streamId) {
-        if (streams[streamId].status != StreamStatus.Paused)
+        Stream storage s = streams[streamId];
+        if (s.status != StreamStatus.Paused)
             revert StreamNotPaused(streamId);
-        streams[streamId].status = StreamStatus.Active;
+
+        uint256 pausedStart = pausedAt[streamId];
+        uint256 pauseDuration;
+        unchecked {
+            pauseDuration = block.timestamp - pausedStart;
+            s.startTime += pauseDuration;
+            s.stopTime += pauseDuration;
+        }
+
+        pausedAt[streamId] = 0;
+        s.status = StreamStatus.Active;
         emit StreamResumed(streamId, msg.sender);
     }
 

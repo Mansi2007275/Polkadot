@@ -344,6 +344,28 @@ describe("MicropaymentStream", function () {
       await stream.connect(sender).pauseStream(streamId);
       expect(await stream.balanceOf(streamId)).to.equal(0n);
     });
+
+    it("does not accrue vested balance while paused after resume", async function () {
+      const { stream, usdt, sender, recipient } = await loadFixture(deployFixture);
+      const { streamId, startTime } = await createStream(stream, usdt, sender, recipient);
+
+      // Let 1 hour vest, then pause.
+      await time.increaseTo(startTime + 3600n);
+      await stream.connect(sender).pauseStream(streamId);
+
+      // Stay paused for 2 hours.
+      const pausedAt = BigInt(await time.latest());
+      await time.increaseTo(pausedAt + 7200n);
+
+      // Resume and move forward 30 minutes.
+      await stream.connect(sender).resumeStream(streamId);
+      const resumedAt = BigInt(await time.latest());
+      await time.increaseTo(resumedAt + 1800n);
+
+      // Only 1h + 0.5h should be vested (paused time must not count).
+      const bal = await stream.balanceOf(streamId);
+      expect(Number(bal)).to.be.closeTo(Number(RATE * 5400n), Number(RATE * 2n));
+    });
   });
 
   // ---------------------------------------------------------------------------

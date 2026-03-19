@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
-import { motion } from "framer-motion";
-import { Search, Activity, ArrowUpRight, Clock, ShieldCheck } from "lucide-react";
+import { formatUnits } from "viem";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Activity, ArrowUpRight, Clock, ShieldCheck, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import {
   useStreamData,
   useStreamBalance,
   useWithdrawFromStream,
   useCancelStream,
   useNextStreamId,
+  useRelayerWithdraw,
   formatUSDT,
   formatRate,
   progressPercent,
@@ -30,55 +32,48 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="glass p-8 rounded-[32px] border border-white/10 shadow-2xl">
-      <div className="flex items-center justify-between mb-8">
+    <div className="terminal-card p-6">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold font-space flex items-center gap-3">
-             <Activity className="w-6 h-6 text-primary-pink" />
-             Active Stream Dashboard
+          <h2 className="text-sm font-mono font-semibold text-white flex items-center gap-2">
+            <Activity className="w-4 h-4 text-neon-pink" />
+            Active Streams
           </h2>
-          <p className="text-sm text-white/40 mt-1 font-inter">
-            Next stream on-chain ID: <span className="text-primary-blue font-mono font-bold">#{nextId?.toString() ?? "…"}</span>
+          <p className="text-[10px] font-mono text-[#666] mt-1">
+            Next ID: <span className="text-neon-blue">#{nextId?.toString() ?? "—"}</span>
           </p>
         </div>
       </div>
 
-      {/* Stream Lookup */}
-      <div className="flex gap-3 mb-10">
-        <div className="relative flex-1 group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 text-white/20 group-focus-within:text-primary-pink transition-colors" />
+      <div className="flex gap-2 mb-6">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Search className="w-3.5 h-3.5 text-[#444]" />
           </div>
           <input
             type="number"
             value={streamId}
             onChange={(e) => setStreamId(e.target.value)}
-            placeholder="Search Stream ID..."
+            placeholder="Stream ID..."
             min="1"
-            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/20 focus:border-primary-pink/50 focus:bg-white/[0.05] focus:outline-none transition-all"
+            className="w-full pl-9 pr-3 py-3 bg-black/50 border border-[#222] text-white text-[11px] font-mono placeholder-[#444] focus:border-neon-pink focus:outline-none"
           />
         </div>
         <button
           onClick={handleLookup}
-          className="px-8 py-4 rounded-2xl bg-gradient-to-r from-primary-pink to-primary-purple text-white text-sm font-bold font-space hover:shadow-glow-pink transition-all active:scale-95"
+          className="px-5 py-3 bg-neon-pink/10 border border-neon-pink text-neon-pink text-[11px] font-mono font-semibold uppercase tracking-wider hover:bg-neon-pink/20 transition-colors"
         >
           Inspect
         </button>
       </div>
 
-      {/* Stream Card */}
       {viewId !== undefined && <StreamCard streamId={viewId} connectedAddress={address} />}
 
       {!viewId && (
-        <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-3xl">
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="text-5xl mb-6 opacity-20 inline-block"
-          >
-            🌀
-          </motion.div>
-          <p className="text-white/40 font-medium uppercase tracking-widest text-xs">Enter a stream ID to view realtime data</p>
+        <div className="py-16 text-center border border-dashed border-[#222]">
+          <p className="text-[10px] font-mono text-[#444] uppercase tracking-widest">
+            Enter stream ID
+          </p>
         </div>
       )}
     </div>
@@ -97,21 +92,22 @@ function StreamCard({
   const { data: stream, isLoading, error } = useStreamData(streamId);
   const { data: claimable } = useStreamBalance(streamId);
   const { withdraw, isPending: withdrawPending } = useWithdrawFromStream();
-  const { cancel,   isPending: cancelPending  } = useCancelStream();
+  const { cancel, isPending: cancelPending } = useCancelStream();
+  const { relayWithdraw, isRelaying, relayerResult } = useRelayerWithdraw();
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="w-10 h-10 border-4 border-white/5 border-t-primary-pink rounded-full animate-spin shadow-glow-pink" />
-        <p className="text-xs font-bold text-white/20 uppercase tracking-widest">Querying Layer...</p>
+      <div className="py-12 flex flex-col items-center gap-4">
+        <div className="w-8 h-8 border border-[#222] border-t-neon-pink animate-spin" />
+        <p className="text-[10px] font-mono text-[#666] uppercase">Querying</p>
       </div>
     );
   }
 
   if (error || !stream) {
     return (
-      <div className="p-6 rounded-2xl bg-red-500/5 border border-red-500/20 text-center">
-        <p className="text-red-400 text-sm font-bold">Stream resolution failed. Ensure ID exists on Paseo.</p>
+      <div className="p-4 border border-red-500/30 bg-red-500/5">
+        <p className="text-[11px] font-mono text-red-400">Stream not found</p>
       </div>
     );
   }
@@ -119,130 +115,187 @@ function StreamCard({
   const s = stream as unknown as StreamData;
   const progress = progressPercent(s);
   const isRecipient = connectedAddress?.toLowerCase() === s.recipient.toLowerCase();
-  const isSender    = connectedAddress?.toLowerCase() === s.sender.toLowerCase();
-  const status      = s.status as StreamStatus;
+  const isSender = connectedAddress?.toLowerCase() === s.sender.toLowerCase();
+  const status = s.status as StreamStatus;
   const statusLabel = streamStatusLabel(status);
   const statusColor = streamStatusColor(status);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="p-8 rounded-[24px] bg-white/[0.02] border border-white/10 space-y-8"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="px-3 py-1.5 rounded-xl bg-white/5 text-sm font-mono font-bold text-primary-pink border border-white/10">#{streamId.toString()}</span>
-          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${statusColor} border border-white/5 shadow-sm`}>
-            {statusLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-white/40">
-           <Clock className="w-3.5 h-3.5" />
-           <span className="text-xs font-mono">{formatRate(s.ratePerSecond)}</span>
-        </div>
-      </div>
-
-      {/* Addresses */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group hover:border-white/20 transition-all">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-3">Sender Node</p>
-          <p className="font-mono text-white text-sm break-all flex items-center justify-between">
-            {s.sender.slice(0, 12)}…{s.sender.slice(-10)}
-            {isSender && <span className="text-[10px] bg-primary-pink text-white px-1.5 py-0.5 rounded ml-2">YOU</span>}
-          </p>
-        </div>
-        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group hover:border-white/20 transition-all">
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-3">Recipient Node</p>
-          <p className="font-mono text-white text-sm break-all flex items-center justify-between">
-            {s.recipient.slice(0, 12)}…{s.recipient.slice(-10)}
-            {isRecipient && <span className="text-[10px] bg-primary-blue text-white px-1.5 py-0.5 rounded ml-2">YOU</span>}
-          </p>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-end">
-          <div className="space-y-1">
-             <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Flow Status</p>
-             <p className="text-2xl font-bold font-space gradient-text">{progress}%</p>
-          </div>
-          <ArrowUpRight className="w-5 h-5 text-white/20" />
-        </div>
-        <div className="h-3 w-full rounded-full bg-white/5 overflow-hidden p-0.5 border border-white/5">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            className="h-full rounded-full bg-gradient-to-r from-primary-pink via-primary-purple to-primary-blue shadow-glow-pink"
-          />
-        </div>
-      </div>
-
-      {/* Financial Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Stat label="Initial Deposit" value={formatUSDT(s.deposit)} unit="USDT" />
-        <Stat label="Total Flowed"     value={formatUSDT(s.withdrawn)} unit="USDT" />
-        <Stat label="Liquid Balance"   value={formatUSDT(claimable ?? 0n)} unit="USDT" active />
-      </div>
-
-      {/* Gas Subsidy UI */}
-      {isRecipient && (
-        <div className="p-4 rounded-2xl bg-primary-blue/5 border border-primary-blue/20 flex items-center gap-4">
-           <div className="w-10 h-10 rounded-full bg-primary-blue/10 flex items-center justify-center">
-              <ShieldCheck className="w-6 h-6 text-primary-blue" />
-           </div>
-           <div>
-              <p className="text-xs font-bold text-white uppercase tracking-tight">Fee Exemption Active</p>
-              <p className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5 font-medium">Claim costs covered by protocol staking yield</p>
-           </div>
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {status === 0 && (
+        <StreamVisualizer rate={s.ratePerSecond} progress={progress} />
       )}
 
-      {/* Actions */}
-      <div className="flex gap-4">
-        {isRecipient && status === 0 && (claimable ?? 0n) > 0n && (
-          <button
-            onClick={() => withdraw(streamId, claimable!)}
-            disabled={withdrawPending}
-            className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-primary-pink to-primary-purple text-white text-lg font-bold font-space hover:shadow-glow-pink transition-all active:scale-95 disabled:opacity-50"
-          >
-            {withdrawPending ? "Authorizing..." : `Claim ${formatUSDT(claimable)} USDT`}
-          </button>
+      <div className="terminal-card p-5 space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-1 border border-neon-pink text-[10px] font-mono text-neon-pink">
+              #{streamId.toString()}
+            </span>
+            <span className={`text-[10px] font-mono uppercase ${statusColor}`}>{statusLabel}</span>
+          </div>
+          <span className="text-[10px] font-mono text-[#666]">{formatRate(s.ratePerSecond)}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 bg-black/50 border border-[#222]">
+            <p className="text-[9px] font-mono text-[#666] uppercase mb-1">Sender</p>
+            <p className="text-[10px] font-mono text-white break-all">
+              {s.sender.slice(0, 10)}…{s.sender.slice(-8)}
+              {isSender && <span className="ml-1 text-neon-pink">·YOU</span>}
+            </p>
+          </div>
+          <div className="p-3 bg-black/50 border border-[#222]">
+            <p className="text-[9px] font-mono text-[#666] uppercase mb-1">Recipient</p>
+            <p className="text-[10px] font-mono text-white break-all">
+              {s.recipient.slice(0, 10)}…{s.recipient.slice(-8)}
+              {isRecipient && <span className="ml-1 text-neon-blue">·YOU</span>}
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between text-[10px] font-mono text-[#666] mb-1">
+            <span>Flow</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-2 w-full bg-black/50 border border-[#222] overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              className="h-full bg-gradient-to-r from-neon-pink to-neon-blue"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="Deposit" value={formatUSDT(s.deposit)} />
+          <Stat label="Flowed" value={formatUSDT(s.withdrawn)} />
+          <Stat label="Claimable" value={formatUSDT(claimable ?? 0n)} active />
+        </div>
+
+        {isRecipient && (
+          <div className="p-3 border border-neon-blue/30 bg-neon-blue/5 flex items-center gap-3">
+            <ShieldCheck className="w-4 h-4 text-neon-blue" />
+            <p className="text-[10px] font-mono text-[#888]">Gas covered via 0x801 yield</p>
+          </div>
         )}
-        {isSender && status === 0 && (
-          <button
-            onClick={() => cancel(streamId)}
-            disabled={cancelPending}
-            className="flex-1 py-4 rounded-2xl border border-white/10 text-white/60 text-lg font-bold font-space hover:bg-white/5 transition-all active:scale-95 disabled:opacity-50"
-          >
-            {cancelPending ? "Terminating..." : "Cancel Flow"}
-          </button>
-        )}
+
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            {isRecipient && status === 0 && (claimable ?? 0n) > 0n && (
+              <>
+                <button
+                  onClick={() => withdraw(streamId, claimable!)}
+                  disabled={withdrawPending || isRelaying}
+                  className="flex-1 py-3 border border-[#333] text-[11px] font-mono text-[#888] hover:border-[#444] hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {withdrawPending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Direct
+                    </span>
+                  ) : (
+                    "Direct Claim"
+                  )}
+                </button>
+                <button
+                  onClick={() => relayWithdraw(Number(streamId), formatUSDT(claimable!))}
+                  disabled={withdrawPending || isRelaying}
+                  className="flex-[2] py-3 bg-neon-pink/20 border border-neon-pink text-neon-pink text-[11px] font-mono font-semibold hover:bg-neon-pink/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isRelaying ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> AI…</>
+                  ) : (
+                    <><Sparkles className="w-3.5 h-3.5" /> Gas-less Claim</>
+                  )}
+                </button>
+              </>
+            )}
+            {isSender && status === 0 && (
+              <button
+                onClick={() => cancel(streamId)}
+                disabled={cancelPending}
+                className="flex-1 py-3 border border-[#333] text-[11px] font-mono text-[#666] hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-50"
+              >
+                {cancelPending ? "…" : "Cancel"}
+              </button>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {relayerResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className={`p-3 border flex items-center gap-2 text-[10px] font-mono ${
+                  relayerResult.status === "success" || relayerResult.status === "queued"
+                    ? "border-neon-green/30 text-neon-green"
+                    : "border-red-500/30 text-red-400"
+                }`}
+              >
+                {relayerResult.status === "success" || relayerResult.status === "queued" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5" />
+                )}
+                {relayerResult.message}
+                {relayerResult.tx_hash && (
+                  <span className="text-[9px] opacity-60 truncate">{relayerResult.tx_hash.slice(0, 18)}…</span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  unit,
-  active,
-}: {
-  label: string;
-  value: string;
-  unit?: string;
-  active?: boolean;
-}) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Stream Visualizer — SVG flow (continuous value)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StreamVisualizer({ rate, progress }: { rate: bigint; progress: number }) {
+  const rateFormatted = formatUnits(rate, 6);
+  // Scale animation speed with ratePerSecond: higher rate = faster flow
+  const rateNum = Number(rate) / 1e6;
+  const duration = Math.max(0.4, Math.min(3, 2.5 / (1 + rateNum)));
+
   return (
-    <div className={`p-5 rounded-2xl border transition-all ${active ? 'bg-primary-pink/5 border-primary-pink/30 shadow-glow-pink' : 'bg-white/5 border-white/5'}`}>
-      <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2">{label}</p>
-      <div className="flex items-baseline gap-1.5">
-        <p className={`text-xl font-bold font-space ${active ? 'text-white' : 'text-white/80'}`}>{value}</p>
-        <span className="text-[10px] font-mono text-white/20 uppercase">{unit}</span>
+    <div className="relative h-24 w-full bg-black/60 border border-[#222] overflow-hidden">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 96" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#E6007A" />
+            <stop offset="100%" stopColor="#0070F3" />
+          </linearGradient>
+        </defs>
+        <motion.path
+          d="M 0 48 Q 100 12 200 48 T 400 48"
+          fill="transparent"
+          stroke="url(#flowGradient)"
+          strokeWidth="2"
+          strokeDasharray="10 5"
+          initial={{ strokeDashoffset: 20 }}
+          animate={{ strokeDashoffset: 0 }}
+          transition={{ repeat: Infinity, duration, ease: "linear" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-[10px] font-mono text-[#555] uppercase">
+          Vesting: {rateFormatted} USDT/sec · speed ×{(1 / duration).toFixed(1)}
+        </span>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, active }: { label: string; value: string; active?: boolean }) {
+  return (
+    <div className={`p-2 border ${active ? "border-neon-pink/40 bg-neon-pink/5" : "border-[#222] bg-black/30"}`}>
+      <p className="text-[9px] font-mono text-[#666] uppercase mb-0.5">{label}</p>
+      <p className={`text-sm font-mono tabular-nums ${active ? "text-white" : "text-[#888]"}`}>{value}</p>
     </div>
   );
 }

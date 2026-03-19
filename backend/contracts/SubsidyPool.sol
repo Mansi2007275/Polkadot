@@ -37,8 +37,8 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
     // Constants
     // =========================================================================
 
-    /// @notice Annual yield rate expressed as basis points (100 = 1%).
-    uint256 public constant BASE_YIELD_BPS = 500; // 5% APY from ad/staking revenue
+    /// @notice Fallback annual yield rate in basis points (100 = 1%) when no live staking data.
+    uint256 public constant BASE_YIELD_BPS = 500; // 5% APY fallback
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint256 public constant SECONDS_PER_YEAR = 365 days;
 
@@ -87,6 +87,15 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
     /// @notice Total gas cost covered by the pool (in native token wei equiv.).
     uint256 public totalGasCovered;
 
+    /// @notice Address of the StablecoinBridge that sweeps staking yield.
+    address public bridgeContract;
+
+    /// @notice Real yield swept from staking precompile (cumulative).
+    uint256 public realYieldReceived;
+
+    /// @notice Dynamic APY in basis points, updated on each yield sweep.
+    uint256 public dynamicApyBps;
+
     // =========================================================================
     // Events
     // =========================================================================
@@ -96,14 +105,17 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
     event YieldClaimed(address indexed depositor, uint256 yieldAmount);
     event SubsidisedWithdrawal(
         uint256 indexed streamId,
-        address indexed recipient,
+        address indexed relayer,
         uint256 amount,
-        uint256 gasUsed
+        uint256 gasUsed,
+        uint256 reimbursement
     );
     event AdRevenueReceived(address indexed payer, uint256 amount);
     event RelayerUpdated(address indexed relayer, bool authorised);
     event StreamContractUpdated(address indexed oldContract, address indexed newContract);
     event YieldAccrued(uint256 newAccYieldPerShare, uint256 timestamp);
+    event RealYieldReceived(address indexed from, uint256 amount, uint256 newDynamicApy);
+    event BridgeContractUpdated(address indexed oldBridge, address indexed newBridge);
 
     // =========================================================================
     // Errors
@@ -154,6 +166,16 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
         if (_streamContract == address(0)) revert InvalidAddress(_streamContract);
         emit StreamContractUpdated(streamContract, _streamContract);
         streamContract = _streamContract;
+    }
+
+    /**
+     * @notice Set the bridge contract that can sweep yield.
+     * @param _bridgeContract Address of StablecoinBridge.
+     */
+    function setBridgeContract(address _bridgeContract) external onlyOwner {
+        if (_bridgeContract == address(0)) revert InvalidAddress(_bridgeContract);
+        emit BridgeContractUpdated(bridgeContract, _bridgeContract);
+        bridgeContract = _bridgeContract;
     }
 
     // =========================================================================
@@ -276,13 +298,22 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
         IMicropaymentStream(streamContract).withdrawFromStream(streamId, amount);
 
         uint256 gasUsed = gasBefore - gasleft();
+        uint256 reimbursement = gasUsed * tx.gasprice;
+
+        // Reimburse relayer in native tokens (DOT) if pool has enough balance.
+        // This directly utilizes staking rewards to fund the relayer network.
+        if (address(this).balance >= reimbursement) {
+            (bool success, ) = payable(msg.sender).call{value: reimbursement}("");
+            // We don't revert if reimbursement fails to ensure stream integrity,
+            // but the relayer can check the event.
+        }
 
         unchecked {
             totalSubsidisedTxns++;
             totalGasCovered += gasUsed;
         }
 
-        emit SubsidisedWithdrawal(streamId, msg.sender, amount, gasUsed);
+        emit SubsidisedWithdrawal(streamId, msg.sender, amount, gasUsed, reimbursement);
     }
 
     /**
@@ -298,6 +329,48 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
         }
 
         emit AdRevenueReceived(msg.sender, amount);
+    }
+
+    /**
+     * @notice Receive real staking yield swept from the StablecoinBridge.
+     * @dev    Called by the bridge after calling syncRealTimeYield().
+     *         Distributes the yield to all depositors via share accounting
+     *         and updates the dynamic APY estimate.
+     * @param amount Amount of baseToken swept as yield.
+     */
+    function receiveYieldSweep(uint256 amount) external nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+        baseToken.safeTransferFrom(msg.sender, address(this), amount);
+        _accountRealYield(amount);
+    }
+
+    /**
+     * @dev Internal logic to distribute swept yield and update metrics.
+     */
+    function _accountRealYield(uint256 amount) internal {
+        unchecked {
+            realYieldReceived += amount;
+        }
+
+        if (totalShares > 0) {
+            accYieldPerShare += (amount * 1e18) / totalShares;
+        }
+
+        if (totalDeposited > 0) {
+            // Simplified APY calculation based on current sweep.
+            dynamicApyBps = (amount * BPS_DENOMINATOR * SECONDS_PER_YEAR) /
+                (totalDeposited * (block.timestamp - lastYieldUpdate + 1));
+        }
+
+        lastYieldUpdate = block.timestamp;
+        emit RealYieldReceived(msg.sender, amount, dynamicApyBps);
+    }
+
+    /// @notice Accept native DOT for gas subsidy operations. 
+    /// @dev Native DOT is used to reimburse relayers for gas costs, 
+    ///      closing the loop on staking rewards usage.
+    receive() external payable {
+        // Only log arrival, don't account as USDT yield to avoid logic bugs.
     }
 
     // =========================================================================
@@ -338,6 +411,20 @@ contract SubsidyPool is ReentrancyGuard, Ownable {
     function depositorShareBps(address depositor) external view returns (uint256) {
         if (totalShares == 0) return 0;
         return (depositors[depositor].shares * BPS_DENOMINATOR) / totalShares;
+    }
+
+    /**
+     * @notice Returns the effective APY: dynamic from staking if available, else fallback.
+     */
+    function currentApyBps() external view returns (uint256) {
+        return dynamicApyBps > 0 ? dynamicApyBps : BASE_YIELD_BPS;
+    }
+
+    /**
+     * @notice Returns the total real yield received from staking.
+     */
+    function totalRealYield() external view returns (uint256) {
+        return realYieldReceived;
     }
 
     // =========================================================================

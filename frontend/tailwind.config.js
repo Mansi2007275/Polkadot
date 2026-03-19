@@ -7,32 +7,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#0b0b0f",
-        card: "#12121a",
-        primary: {
-          pink: "#ff007a",
+        background: "#050505",
+        "bg-card": "#0a0a0a",
+        border: "#222",
+        "border-focus": "#333",
+        neon: {
+          pink: "#E6007A",
+          blue: "#0070F3",
           purple: "#7928ca",
-          blue: "#0070f3",
+          green: "#00ff88",
         },
-        polkadot: {
-          pink:  "#E6007A",
-          dark:  "#0D0D0D",
-          gray:  "#1A1A1A",
+        primary: {
+          pink: "#E6007A",
+          purple: "#7928ca",
+          blue: "#0070F3",
         },
       },
       fontFamily: {
-        inter: ["Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
         sora: ["Sora", "sans-serif"],
-        space: ["'Space Grotesk'", "sans-serif"],
+      },
+      borderRadius: {
+        none: "0",
+        sm: "2px",
       },
       boxShadow: {
-        'glow-pink': '0 0 20px rgba(230, 0, 122, 0.3)',
-        'glow-purple': '0 0 20px rgba(121, 40, 202, 0.3)',
-        'glow-blue': '0 0 20px rgba(0, 112, 243, 0.3)',
-      },
-      animation: {
-        "spin-slow": "spin 3s linear infinite",
-        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "glow-pink": "0 0 12px rgba(230, 0, 122, 0.3)",
+        "glow-blue": "0 0 12px rgba(0, 112, 243, 0.3)",
+        "glow-green": "0 0 12px rgba(0, 255, 136, 0.3)",
       },
     },
   },

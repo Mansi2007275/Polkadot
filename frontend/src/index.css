@@ -1,13 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
 :root {
-  --polkadot-pink: #ff007a;
-  --background: #0b0b0f;
-  --card: #12121a;
+  --bg: #050505;
+  --bg-card: #0a0a0a;
+  --border: #222;
+  --border-focus: #333;
+  --neon-pink: #E6007A;
+  --neon-blue: #0070F3;
+  --neon-purple: #7928ca;
+  --neon-green: #00ff88;
+  --text: #e5e5e5;
+  --text-dim: #666;
 }
 
 * {
@@ -16,66 +21,93 @@
 
 html {
   scroll-behavior: smooth;
-  background-color: var(--background);
+  background-color: var(--bg);
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: var(--background);
-  color: #ffffff;
+  font-family: 'JetBrains Mono', 'Sora', ui-monospace, monospace;
+  background-color: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Space Grotesk', sans-serif;
+/* Protocol Console: Scan-line overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  opacity: 0.4;
 }
 
-/* Glassmorphism utility */
-.glass {
-  background: rgba(18, 18, 26, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* Grid background */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.5;
 }
 
-.glass-hover:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+/* Terminal card */
+.terminal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
-/* Gradient Text */
-.gradient-text {
-  background: linear-gradient(to right, #ff007a, #7928ca, #0070f3);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.terminal-card:hover {
+  border-color: var(--border-focus);
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--background); }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+/* Neon accent border */
+.border-neon-pink { border-color: var(--neon-pink); }
+.border-neon-blue { border-color: var(--neon-blue); }
+.border-neon-green { border-color: var(--neon-green); }
+
+/* Monospace for data */
+.font-mono, .font-data {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 0; }
 ::-webkit-scrollbar-thumb:hover { background: #444; }
 
-/* RainbowKit overrides */
-[data-rk] button {
-  font-family: 'Space Grotesk', sans-serif !important;
-  border-radius: 12px !important;
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
+.scrollbar-none::-webkit-scrollbar { display: none; }
 
-.font-space { font-family: 'Space Grotesk', sans-serif; }
-.font-sora { font-family: 'Sora', sans-serif; }
+/* RainbowKit */
+[data-rk] button {
+  font-family: 'JetBrains Mono', monospace !important;
+  border-radius: 2px !important;
+}
 
 /* Animations */
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 15px rgba(255, 0, 122, 0.2); }
-  50% { box-shadow: 0 0 30px rgba(255, 0, 122, 0.4); }
+@keyframes flow-dash {
+  to { stroke-dashoffset: 0; }
 }
 
-.glow-active {
-  animation: glow-pulse 3s ease-in-out infinite;
+@keyframes pulse-neon {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }

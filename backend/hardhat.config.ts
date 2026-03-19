@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
     // -------------------------------------------------------------------------
     paseo: {
       url: PASEO_RPC,
-      chainId: 420420421, // Polkadot Hub Paseo EVM chain id
+      chainId: 420420417, // Polkadot Hub Paseo EVM chain id
       accounts: [PRIVATE_KEY],
       gasPrice: "auto",
       timeout: 120_000,
@@ -61,7 +61,7 @@ const config: HardhatUserConfig = {
     customChains: [
       {
         network: "paseo",
-        chainId: 420420421,
+        chainId: 420420417,
         urls: {
           apiURL: "https://blockscout.paseo.polkadot.com/api",
           browserURL: "https://blockscout.paseo.polkadot.com",

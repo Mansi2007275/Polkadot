@@ -22,6 +22,8 @@ yarn-error.log*
 # OS generated files
 .DS_Store
 Thumbs.db
+.cursorrules
+/tmp/
 
 # Hardhat cache
 cache/
@@ -37,6 +39,7 @@ frontend/dist/
 
 # Backend build
 backend/dist/
+digest.txt
 
 # Typechain
 backend/typechain/
@@ -74,6 +77,21 @@ backend/artifacts/build-info/
 # Ignore solidity cache
 backend/cache/
 backend/solidity-files-cache.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.pytest_cache/
+.python-version
+
+# More private/temp files
+.cursorrules
+/tmp/
+*.log
+*.tmp
 
 # Ignore frontend node_modules
 frontend/node_modules/

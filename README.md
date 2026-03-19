@@ -1,9 +1,9 @@
 # Zero-Fee Micropayments on Polkadot Hub
 
-> **DoraHacks / OpenGuild Hackathon · EVM Smart Contracts Track**
+> **DoraHacks / OpenGuild Hackathon · Track 2: PVM/Native Functionality**
 > Testnet: Polkadot Hub Paseo
 
-Stream ERC-20 stablecoins (USDT / USDC) continuously on Polkadot Hub with **zero gas fees for recipients** — gas costs are entirely covered by yield generated from staking rewards, ad-slot revenue, and SubsidyPool depositors.
+Stream ERC-20 stablecoins (USDT / USDC) continuously on Polkadot Hub with **zero gas fees for recipients** — gas costs are entirely covered by **live staking yield** from the Staking Precompile (0x801), ad-slot revenue, and SubsidyPool depositors. Native Asset ID 1984 (USDT) supported via Assets Precompile (0x802).
 
 ---
 
@@ -14,19 +14,19 @@ graph TD
     subgraph "User Layer"
         UA[Alice – Sender]
         UB[Bob – Recipient]
-        UR[Relayer / SubsidyPool Bot]
+        UR[Agentic Relayer Bot\nFastAPI + Gas Predictor]
     end
 
     subgraph "Polkadot Hub EVM (Paseo)"
         MS[MicropaymentStream.sol\nSablier-style streaming]
-        SP[SubsidyPool.sol\nYield + Ads + Gas subsidies]
-        SB[StablecoinBridge.sol\nXCM precompile wrapper]
+        SP[SubsidyPool.sol\nDynamic yield + Gas subsidies]
+        SB[StablecoinBridge.sol\nsyncRealTimeYield + XCM]
     end
 
     subgraph "Polkadot Hub Precompiles"
         XCM[XCM Precompile\n0x...0800]
         STK[Staking Precompile\n0x...0801]
-        AST[Assets Precompile\n0x...0802]
+        AST[Assets Precompile\n0x...0802\nUSDT ID 1984]
     end
 
     subgraph "Other Parachains"
@@ -35,15 +35,16 @@ graph TD
     end
 
     UA -->|createStream + deposit USDT| MS
-    MS -->|locks tokens| MS
     UB -->|balanceOf| MS
     UR -->|subsidisedWithdraw| SP
     SP -->|withdrawFromStream| MS
     MS -->|safeTransfer USDT| UB
 
     UA -->|deposit USDT for yield| SP
-    SP -->|yield accrual 5% APY| SP
-    SP -->|receiveAdRevenue| SP
+    UR -->|syncRealTimeYield| SB
+    SB -->|pendingRewards + payout| STK
+    SB -->|sweepTokenYield| SP
+    SP -->|receiveYieldSweep| SP
 
     SB -->|xcmSend| XCM
     XCM -->|ReserveTransferAssets| ACA
@@ -57,6 +58,7 @@ graph TD
     style XCM fill:#444,color:#fff
     style STK fill:#444,color:#fff
     style AST fill:#444,color:#fff
+    style UR fill:#0070f3,color:#fff
 ```
 
 ---
@@ -68,38 +70,42 @@ zero-fee-micropayments/
 ├── backend/
 │   ├── contracts/
 │   │   ├── MicropaymentStream.sol   # Sablier-style streaming with subsidy hooks
-│   │   ├── SubsidyPool.sol          # Yield pool covering gas via staking + ads
-│   │   ├── StablecoinBridge.sol     # XCM precompile bridge for USDT/USDC
-│   │   └── MockERC20.sol            # Test token (local/testnet only)
+│   │   ├── SubsidyPool.sol          # Dynamic yield pool (staking + ads + gas subsidies)
+│   │   ├── StablecoinBridge.sol     # syncRealTimeYield + XCM precompile bridge
+│   │   └── MockERC20.sol            # Test token (local only)
 │   ├── scripts/
-│   │   └── deploy.ts                # Full deployment + verification script
+│   │   └── deploy.ts                # Native Asset ID 1984 aware deployment
 │   ├── test/
-│   │   └── MicropaymentStream.test.ts  # 20+ test cases (Chai + Mocha)
+│   │   └── MicropaymentStream.test.ts
 │   ├── hardhat.config.ts
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env.example
+│   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.tsx              # Root app with tab navigation
+│   │   ├── App.tsx                   # 5-tab layout (Streams, Yield Pool, Yield Engine, Bridge, History)
 │   │   ├── config/
-│   │   │   ├── wagmi.ts         # Wagmi + Paseo chain config
-│   │   │   └── contracts.ts     # ABIs + deployed addresses
+│   │   │   ├── wagmi.ts             # Paseo chain definition
+│   │   │   └── contracts.ts         # ABIs + precompile addresses
 │   │   ├── components/
 │   │   │   ├── WalletConnect.tsx
 │   │   │   ├── StreamForm.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── SubsidyPoolStatus.tsx
+│   │   │   ├── Dashboard.tsx        # + Live Stream Visualizer (Framer Motion)
+│   │   │   ├── SubsidyPoolStatus.tsx # Real-time APY + Gas Saved USD tracker
+│   │   │   ├── YieldEngine.tsx      # TVL vs Gas Saved analytics dashboard
 │   │   │   ├── BridgeButton.tsx
 │   │   │   └── TransactionHistory.tsx
 │   │   ├── hooks/
-│   │   │   └── useStream.ts     # All Wagmi hooks for contract interaction
+│   │   │   └── useStream.ts
 │   │   ├── main.tsx
 │   │   └── index.css
-│   ├── index.html
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
 │   └── package.json
+├── relayer/
+│   ├── main.py                       # FastAPI agentic relayer service
+│   ├── relayer.py                    # Core relayer logic + event monitoring
+│   ├── gas_predictor.py              # ML-based gas price prediction model
+│   ├── abis.py                       # Contract ABIs for web3.py
+│   ├── config.py                     # Environment configuration
+│   ├── requirements.txt
+│   └── .env.example
 └── README.md
 ```
 
@@ -107,17 +113,62 @@ zero-fee-micropayments/
 
 ## Technical Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Smart Contracts | Solidity ^0.8.20, OpenZeppelin 5.x |
-| Development | Hardhat 2.22, TypeScript, Ethers v6 |
-| Testing | Mocha, Chai, hardhat-network-helpers |
-| Frontend | React 18, Vite 5, TypeScript |
-| Web3 | Wagmi v2, Viem v2, RainbowKit v2 |
-| State | TanStack Query v5 |
-| Styling | Tailwind CSS 3.4 |
-| Network | Polkadot Hub Paseo testnet (EVM) |
-| XCM | Official Polkadot precompiles (0x800, 0x801, 0x802) |
+| Layer           | Technology                                                   |
+| --------------- | ------------------------------------------------------------ |
+| Smart Contracts | Solidity ^0.8.20, OpenZeppelin 5.x, Custom Errors            |
+| Development     | Hardhat 2.22, TypeScript, Ethers v6                          |
+| Testing         | Mocha, Chai, hardhat-network-helpers                         |
+| Frontend        | React 18, Vite 5, TypeScript                                 |
+| Web3            | Wagmi v2, Viem v2, RainbowKit v2                             |
+| State           | TanStack Query v5                                            |
+| Styling         | Tailwind CSS 3.4, Framer Motion                              |
+| Relayer         | Python 3.11+, FastAPI, web3.py, numpy                        |
+| Network         | Polkadot Hub Paseo testnet (EVM)                             |
+| Precompiles     | XCM (0x800), Staking (0x801), Assets (0x802)                 |
+| Native Assets   | USDT (Asset ID 1984), USDC (Asset ID 1337) via 0x802        |
+
+---
+
+---
+
+## Track 2 Compliance (DoraHacks / OpenGuild)
+
+| Requirement | Implementation |
+| ----------- | -------------- |
+| **Native Asset ID (0x802)** | Uses Asset ID **1984** (USDT) and **1337** (USDC) via Assets Precompile `0x0000...0802`. `bridgeAssetToParachain()` and deployment script use native Substrate assets. |
+| **Staking Precompile (0x801)** | `StablecoinBridge.syncRealTimeYield()` calls `pendingRewards()` and `payout()` on `0x0000...0801`. Yield flows into SubsidyPool to subsidise gas. |
+| **XCM Cross-Chain (0x800)** | `bridgeToParachain()` / `bridgeAssetToParachain()` use XCM Precompile `0x0000...0800` for `xcmSend()` to parachains (e.g. Acala 2000, Hydration 2034). `_encodeParachainDest()` SCALE-encodes multilocations for Paseo. |
+
+---
+
+## Key Features (Track 2 — PVM/Native Functionality)
+
+### 1. Live Staking Interoperability
+- `StablecoinBridge.syncRealTimeYield()` queries the **Staking Precompile (0x801)** for `pendingRewards()`, triggers `payout()`, and sweeps rewards into the SubsidyPool
+- Dynamic APY replaces the hardcoded 5% yield — real validator rewards power the subsidy layer
+- `getStakingStats()` view exposes live bonded amount, pending rewards, and sweep history
+
+### 2. Native Asset Support
+- Deployment script uses **Native USDT (Asset ID 1984)** via the **Assets Precompile (0x802)** on Paseo
+- `bridgeAssetToParachain()` uses `ASSETS_PRECOMPILE.transferFrom()` instead of ERC-20 wrappers
+- Fallback to MockERC20 on local networks for testing
+
+### 3. Agentic Relayer Bot
+- Python/FastAPI service that monitors `MicropaymentStream` events
+- **Gas Predictor** uses exponentially-weighted sliding window statistics to find optimal gas windows
+- Automatically calls `SubsidyPool.subsidisedWithdraw()` at low-gas moments
+- Periodically triggers `syncRealTimeYield()` to keep staking rewards flowing
+
+### 4. Yield Engine Analytics
+- Real-time TVL vs Gas Saved dashboard
+- Staking Precompile (0x801) deep dive with bonded DOT, pending rewards, sweep history
+- Protocol health gauges: yield coverage, pool utilization, subsidy efficiency
+- Live animated yield flow architecture diagram
+
+### 5. Live Stream Visualizer
+- Framer Motion animated particles flowing from sender to recipient in real-time
+- Particle rate scales with the stream's `ratePerSecond`
+- Visual progress bar with gradient fill
 
 ---
 
@@ -125,216 +176,94 @@ zero-fee-micropayments/
 
 ### Prerequisites
 
-- Node.js ≥ 20
-- pnpm or npm
+- Node.js >= 20
+- Python >= 3.11 (for relayer)
 - MetaMask (or any EIP-1193 wallet)
-- Paseo testnet DOT (from [faucet](https://faucet.polkadot.io/?parachain=1000))
+- Paseo testnet DOT
 
-### 1. Clone and install dependencies
+### 1. Clone and install
 
 ```bash
 git clone <your-repo>
 cd zero-fee-micropayments
 
-# Backend (Hardhat)
+# Backend
 cd backend && npm install && cd ..
 
 # Frontend
 cd frontend && npm install && cd ..
+
+# Relayer
+cd relayer && pip install -r requirements.txt && cd ..
 ```
 
 ### 2. Configure environment
 
 ```bash
 cp backend/.env.example backend/.env
-# Edit backend/.env – add PRIVATE_KEY and RPC URLs
-
 cp frontend/.env.example frontend/.env
-# Edit frontend/.env – add VITE_WALLETCONNECT_PROJECT_ID
+cp relayer/.env.example relayer/.env
 ```
 
-### 3. Compile contracts
+### 3. Compile & Test
 
 ```bash
 cd backend
 npm run compile
-# TypeChain types will be generated in typechain-types/
-cd ..
-```
-
-### 4. Run tests
-
-```bash
-cd backend
 npm test
-# With gas report:
-npm run test:gas
-# With coverage:
-npm run test:coverage
-cd ..
 ```
 
----
-
-## Deploying to Paseo Testnet
-
-### Step 1 – Get testnet tokens
-
-1. Visit [https://faucet.polkadot.io/?parachain=1000](https://faucet.polkadot.io/?parachain=1000)
-2. Request DOT for your EVM address (convert SS58 ↔ H160 at [ss58.org](https://ss58.org))
-
-### Step 2 – Deploy stablecoin wrappers (if not yet deployed)
-
-If USDT/USDC are not yet available as ERC-20s on Hub Paseo, deploy the mock token first:
+### 4. Deploy to Paseo
 
 ```bash
 cd backend
 npx hardhat run scripts/deploy.ts --network paseo
-# On first run, it deploys MockERC20 for USDT/USDC
-cd ..
 ```
 
-### Step 3 – Deploy all contracts
+On Paseo, the script will use Native USDT (1984) via Assets Precompile (0x802).
 
-```bash
-cd backend
-# Set USDT_ADDRESS and USDC_ADDRESS in .env if using already-deployed tokens
-npx hardhat run scripts/deploy.ts --network paseo
-cd ..
-```
-
-Output example:
-```
-Paseo network / Deployer: 0xabcd...
-  SubsidyPool deployed at:       0x1234...
-  MicropaymentStream deployed at: 0x5678...
-  StablecoinBridge deployed at:   0x9ABC...
-Addresses saved to: deployments/paseo.json
-```
-
-### Step 4 – Update frontend addresses
-
-Copy the deployed addresses from `backend/deployments/paseo.json` into `frontend/.env`:
-
-```bash
-VITE_STREAM_ADDRESS=0x...
-VITE_SUBSIDY_ADDRESS=0x...
-VITE_BRIDGE_ADDRESS=0x...
-VITE_USDT_ADDRESS=0x...
-```
-
-### Step 5 – Run the frontend
+### 5. Run Frontend
 
 ```bash
 cd frontend
 npm run dev
-# Opens at http://localhost:3000
+```
+
+### 6. Run Agentic Relayer
+
+```bash
+cd relayer
+python main.py
+# API available at http://localhost:8081
+# Endpoints: /health, /stats, /gas, /trigger, /sync-yield
 ```
 
 ---
 
-## How It Works
+## Precompile Addresses (Polkadot Hub Paseo)
 
-### MicropaymentStream
+| Precompile | Address                                      | Usage                          |
+| ---------- | -------------------------------------------- | ------------------------------ |
+| XCM        | `0x0000000000000000000000000000000000000800` | Cross-chain asset transfers    |
+| Staking    | `0x0000000000000000000000000000000000000801` | Bond, nominate, claim rewards  |
+| Assets     | `0x0000000000000000000000000000000000000802` | Native USDT/USDC (ERC-20-like) |
 
-Implements Sablier-style continuous token streaming:
-1. `createStream(recipient, deposit, token, startTime, stopTime)` – locks tokens, computes `ratePerSecond = deposit / duration`
-2. `balanceOf(streamId)` – returns vested but unclaimed tokens in real-time
-3. `withdrawFromStream(streamId, amount)` – recipient (or SubsidyPool relayer) claims tokens
-4. `cancelStream(streamId)` – sender reclaims unvested tokens
-
-### SubsidyPool
-
-Covers all gas fees by:
-- Accepting USDT deposits and issuing pool shares (MasterChef-style accounting)
-- Accruing 5% APY yield from simulated staking / ad revenue
-- Relayers call `subsidisedWithdraw(streamId, amount)` which internally calls `withdrawFromStream` — the pool pays the gas
-
-### StablecoinBridge
-
-Uses XCM precompile at `0x0000000000000000000000000000000000000800`:
-- `bridgeToParachain(token, amount, destParaId, beneficiary)` – locks tokens, sends XCM `ReserveTransferAssets`
-- `bridgeIn(token, recipient, amount, sourceParaId)` – called by trusted XCM origin to release tokens
-- `stakeDotForYield()` – uses staking precompile (0x801) to bond DOT for yield
+| Native Asset | Asset ID | Decimals |
+| ------------ | -------- | -------- |
+| USDT         | 1984     | 6        |
+| USDC         | 1337     | 6        |
 
 ---
 
-## Key Contract Addresses (Polkadot Hub Paseo)
-
-| Precompile | Address |
-|-----------|---------|
-| XCM | `0x0000000000000000000000000000000000000800` |
-| Staking | `0x0000000000000000000000000000000000000801` |
-| Assets | `0x0000000000000000000000000000000000000802` |
-
----
-
-## Demo Video Script (3–5 min)
-
-### Scene 1 – Introduction (0:00–0:30)
-> "Hi, I'm demonstrating Zero-Fee Micropayments on Polkadot Hub. This is a production-ready streaming payments protocol where recipients never pay gas fees — those are covered by yield from our SubsidyPool."
-
-### Scene 2 – Architecture Overview (0:30–1:00)
-> Show the Mermaid diagram. Explain the three contracts: MicropaymentStream (Sablier-style), SubsidyPool (yield pool), StablecoinBridge (XCM).
-
-### Scene 3 – Create a Stream (1:00–2:00)
-1. Connect MetaMask to Paseo testnet
-2. Navigate to "Streams" tab
-3. Enter recipient address, 100 USDT deposit, 1-day duration
-4. Click "Create Stream" → approve → create → show success
-5. Point out "Gas covered by yield pool" badge
-
-### Scene 4 – Dashboard & Live Balance (2:00–3:00)
-1. Enter the new stream ID in the Dashboard
-2. Show the live 5-second balance updates
-3. Click "Claim USDT" → show "Fee covered by yield pool" badge in transaction history
-
-### Scene 5 – Subsidy Pool (3:00–3:45)
-1. Switch to "Subsidy Pool" tab
-2. Show pool balance, TVL, APY, subsidised txns counter
-3. Deposit 500 USDT → earn yield
-
-### Scene 6 – Bridge (3:45–4:30)
-1. Switch to "Bridge" tab
-2. Select Acala (Para 2000), enter beneficiary, 50 USDT
-3. Demonstrate XCM bridge initiation
-
-### Scene 7 – Closing (4:30–5:00)
-> "This proves that real-time micropayments with zero gas fees are possible on Polkadot Hub today. The yield pool architecture is self-sustaining through DeFi yield, making this suitable for payroll, subscriptions, and creator monetisation at scale."
-
----
-
-## DoraHacks Submission Checklist
-
-- [x] Project title and description
-- [x] Track: EVM Smart Contracts (DeFi & Stablecoin-enabled dApps)
-- [x] Deployed on Polkadot Hub Paseo testnet
-- [x] 3 production-ready smart contracts with NatSpec
-- [x] OpenZeppelin 5.x security (ReentrancyGuard, SafeERC20, Ownable)
-- [x] XCM precompile integration (0x800, 0x801, 0x802)
-- [x] Full TypeScript Hardhat project
-- [x] 20+ unit tests with Chai + Mocha
-- [x] React + Wagmi frontend with RainbowKit wallet connect
-- [x] All Wagmi hooks for contract interaction
-- [x] Transaction history with "Fee covered by yield pool" badge
-- [x] XCM stablecoin bridge UI
-- [x] Subsidy pool deposit/withdraw/yield UI
-- [x] Architecture diagram (Mermaid)
-- [x] Demo video script
-- [x] README with full setup instructions
-- [x] .env.example
-- [x] Open-source repository
-
----
-
-## Security Considerations
+## Security
 
 - All fund-moving functions protected by `ReentrancyGuard`
 - CEI (Checks-Effects-Interactions) pattern throughout
-- `SafeERC20` used for all token transfers to handle non-standard tokens
+- `SafeERC20` for all token transfers
+- Custom error types (gas-efficient on Polkadot REVM)
 - XCM calls fail-closed: `if (!ok) revert XcmFailed()`
 - Subsidy pool uses `onlyAuthorisedRelayer` guard
-- Custom error types (not string reverts) save gas on Polkadot REVM
+- Dynamic yield capped by actual precompile returns (no inflation)
 
 ---
 

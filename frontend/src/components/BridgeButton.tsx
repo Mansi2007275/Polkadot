@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useChainId } from "wagmi";
-import { parseUnits, toHex, stringToBytes, isAddress } from "viem";
+import { parseUnits, toHex, stringToBytes } from "viem";
 import { CONTRACT_ADDRESSES, BRIDGE_ABI, ERC20_ABI } from "../config/contracts";
 import { formatUSDT } from "../hooks/useStream";
-import { motion, AnimatePresence } from "framer-motion";
-import { Repeat, ArrowRightLeft, Globe, Send, CheckCircle, Info, Database, Zap, ArrowRight } from "lucide-react";
+import { pushPrecompileLog } from "../lib/precompileFeed";
+import { mockScalePayload } from "./PrecompileMonitor";
+import { motion } from "framer-motion";
+import { Repeat, CheckCircle, Database, Zap, ArrowRight } from "lucide-react";
 
 /** Well-known parachain IDs on Polkadot. */
 const PARACHAINS = [
@@ -27,6 +29,11 @@ export default function BridgeButton() {
   const [amount,       setAmount]       = useState("");
   const [txStatus,     setTxStatus]     = useState<"idle" | "approving" | "bridging" | "done" | "error">("idle");
   const [errorMsg,     setErrorMsg]     = useState("");
+  const [pendingBridge, setPendingBridge] = useState<{
+    amount: bigint;
+    beneficiary: `0x${string}`;
+    destParaId: number;
+  } | null>(null);
 
   // ── Balances ───────────────────────────────────────────────────────────────
 
@@ -55,28 +62,28 @@ export default function BridgeButton() {
   const { isSuccess: bridgeSuccess  } = useWaitForTransactionReceipt({ hash: bridgeTx  });
 
   React.useEffect(() => {
-    if (approveSuccess && txStatus === "approving") {
+    if (approveSuccess && txStatus === "approving" && pendingBridge) {
       setTxStatus("bridging");
-      const beneficiaryBytes = deriveBeneficiary(beneficiary);
       bridgeWrite({
         address: bridgeAddr,
         abi: BRIDGE_ABI,
         functionName: "bridgeToParachain",
         args: [
           usdtAddr,
-          parseUnits(amount, 6),
-          destParaId,
-          beneficiaryBytes,
+          pendingBridge.amount,
+          pendingBridge.destParaId,
+          pendingBridge.beneficiary,
         ],
       });
     }
-  }, [approveSuccess]);
+  }, [approveSuccess, txStatus, pendingBridge, bridgeWrite, bridgeAddr, usdtAddr]);
 
   React.useEffect(() => {
     if (bridgeSuccess && txStatus === "bridging") {
       setTxStatus("done");
+      setPendingBridge(null);
     }
-  }, [bridgeSuccess]);
+  }, [bridgeSuccess, txStatus]);
 
   const handleBridge = () => {
     setErrorMsg("");
@@ -88,7 +95,20 @@ export default function BridgeButton() {
     }
 
     const amountParsed = parseUnits(amount, 6);
+    const beneficiaryBytes = deriveBeneficiary(beneficiary);
+    setPendingBridge({ amount: amountParsed, beneficiary: beneficiaryBytes, destParaId });
     setTxStatus("approving");
+
+    pushPrecompileLog({
+      method: "bridgeToParachain",
+      target: "0x800",
+      payload: mockScalePayload("bridgeToParachain", {
+        destParaId,
+        amount: amountParsed.toString(),
+        beneficiary: beneficiary.slice(0, 20) + "…",
+      }),
+    });
+
     approveWrite({
       address: usdtAddr,
       abi: ERC20_ABI,
@@ -101,31 +121,27 @@ export default function BridgeButton() {
   const selectedChain = PARACHAINS.find((p) => p.id === destParaId);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      {/* ── Bridge Header & Stats ── */}
-      <div className="glass p-10 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-blue/5 blur-[100px] -z-10" />
-        
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+    <div className="space-y-6">
+      <div className="terminal-card p-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
            <div>
-              <h2 className="text-3xl font-bold font-space flex items-center gap-4">
-                 <Repeat className="w-8 h-8 text-primary-blue" />
-                 XCM Asset Bridge
+              <h2 className="text-sm font-mono font-semibold text-white flex items-center gap-2">
+                 <Repeat className="w-4 h-4 text-neon-blue" />
+                 XCM 0x800
               </h2>
-              <p className="text-white/40 mt-3 max-w-xl font-inter leading-relaxed">
-                 Seamlessly transfer USDT between Polkadot Hub and integrated Parachains using 
-                 trustless Cross-Consensus Messaging (XCM) precompiles.
+              <p className="text-[10px] font-mono text-[#666] mt-1">
+                 ReserveTransferAssets · cross-chain
               </p>
            </div>
            <div className="flex gap-4">
-              <StatCard 
-                 label="Pool Buffer" 
-                 value={formatUSDT(bridgeBalance as bigint | undefined)} 
+              <StatCard
+                 label="Pool Buffer"
+                 value={formatUSDT(bridgeBalance as bigint | undefined)}
                  icon={<Database className="w-4 h-4 text-white/20" />}
               />
-              <StatCard 
-                 label="Protocol Throughput" 
-                 value={formatUSDT(totalOut as bigint | undefined)} 
+              <StatCard
+                 label="Protocol Throughput"
+                 value={formatUSDT(totalOut as bigint | undefined)}
                  icon={<Zap className="w-4 h-4 text-primary-pink" />}
                  highlight
               />
@@ -135,23 +151,28 @@ export default function BridgeButton() {
         {/* ── Bridge Form ── */}
         <div className="relative">
           {txStatus === "done" ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-16 bg-white/[0.02] border border-white/5 rounded-[32px]"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 border border-[#222] bg-black/30"
             >
-              <div className="w-24 h-24 rounded-full bg-primary-pink/10 border border-primary-pink/30 flex items-center justify-center mx-auto mb-8 shadow-glow-pink">
-                <CheckCircle className="w-12 h-12 text-primary-pink" />
+              <div className="w-12 h-12 border border-neon-pink flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-6 h-6 text-neon-pink" />
               </div>
-              <h3 className="text-3xl font-bold font-space mb-3 text-white">XCM Message Dispatched</h3>
-              <p className="text-white/40 text-sm mb-10 max-w-md mx-auto leading-relaxed">
-                Tokens are currently traversing the relay chain. Estimated arrival on {selectedChain?.name} in <span className="text-white font-bold">12 seconds</span>.
+              <p className="text-sm font-mono text-white mb-2">XCM dispatched</p>
+              <p className="text-[10px] font-mono text-[#666] mb-6">
+                {selectedChain?.name} · ~12s
               </p>
               <button
-                onClick={() => setTxStatus("idle")}
-                className="px-12 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold font-space hover:bg-white/10 transition-all active:scale-95"
+                onClick={() => {
+                  setTxStatus("idle");
+                  setPendingBridge(null);
+                  setAmount("");
+                  setBeneficiary("");
+                }}
+                className="px-6 py-2 border border-[#333] text-[11px] font-mono text-[#888] hover:border-[#444] hover:text-white"
               >
-                Send Another Artifact
+                New
               </button>
             </motion.div>
           ) : (
@@ -159,7 +180,7 @@ export default function BridgeButton() {
               <div className="space-y-8">
                 {/* Destination Selector */}
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Terminal Parachain</label>
+                  <label className="block text-[9px] font-mono text-[#666] uppercase mb-2">Parachain</label>
                   <div className="grid grid-cols-2 gap-3">
                     {PARACHAINS.map((chain) => (
                       <button
@@ -167,98 +188,76 @@ export default function BridgeButton() {
                         type="button"
                         onClick={() => setDestParaId(chain.id)}
                         disabled={isLoading}
-                        className={`p-4 rounded-2xl text-left transition-all border ${
+                        className={`p-3 text-left transition-all border ${
                           destParaId === chain.id
-                            ? "bg-primary-blue/10 border-primary-blue/40 shadow-glow-blue/10"
-                            : "bg-white/[0.03] border-white/10 text-white/40 hover:border-white/20"
+                            ? "border-neon-blue bg-neon-blue/10"
+                            : "border-[#222] bg-black/30 text-[#666] hover:border-[#333]"
                         }`}
                       >
-                        <p className={`text-sm font-bold font-space ${destParaId === chain.id ? 'text-white' : 'text-white/40'}`}>{chain.name}</p>
-                        <p className="text-[10px] font-mono mt-1 opacity-60">ID: {chain.id}</p>
+                        <p className={`text-[11px] font-mono ${destParaId === chain.id ? "text-white" : "text-[#666]"}`}>{chain.name}</p>
+                        <p className="text-[9px] font-mono text-[#444] mt-0.5">ID: {chain.id}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* XCM Architecture Card */}
-                <div className="p-6 rounded-[24px] bg-white/[0.03] border border-white/5 space-y-4">
-                   <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                         <Globe className="w-5 h-5 text-white/40" />
-                      </div>
-                      <div>
-                         <p className="text-xs font-bold text-white">Cross-Chain Precompile</p>
-                         <p className="text-[10px] text-white/20 font-mono">XCM V3 · ReserveTransferAssets</p>
-                      </div>
-                   </div>
-                   <p className="text-[10px] text-white/40 leading-relaxed italic">
-                      Automated execution via <code className="text-primary-blue">0x...0800</code>. Tokens travel from Polkadot Hub → Relay → {selectedChain?.name}.
-                   </p>
+                <div className="p-3 border border-[#222] bg-black/30">
+                  <p className="text-[10px] font-mono text-[#666]">
+                    XCM V3 · ReserveTransferAssets · 0x0800 → Relay → {selectedChain?.name}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-6">
                 {/* Beneficiary */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Destination Beneficiary</label>
-                  <div className="relative group">
-                    <input
-                      type="text"
-                      value={beneficiary}
-                      onChange={(e) => setBeneficiary(e.target.value)}
-                      placeholder="SS58 or Hex address..."
-                      disabled={isLoading}
-                      className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/10 focus:border-primary-pink/50 focus:bg-white/[0.05] focus:outline-none focus:shadow-glow-pink transition-all font-mono"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[9px] font-mono text-[#666] uppercase mb-1">Beneficiary</label>
+                  <input
+                    type="text"
+                    value={beneficiary}
+                    onChange={(e) => setBeneficiary(e.target.value)}
+                    placeholder="0x or SS58..."
+                    disabled={isLoading}
+                    className="w-full px-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                  />
                 </div>
 
-                {/* Amount */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Asset Quantity</label>
-                  <div className="relative group">
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0.00"
-                      min="0"
-                      disabled={isLoading}
-                      className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/10 focus:border-primary-purple/50 focus:bg-white/[0.05] focus:outline-none focus:shadow-glow-purple transition-all font-space font-bold pr-16"
-                    />
-                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-black">USDT</span>
-                  </div>
+                <div>
+                  <label className="block text-[9px] font-mono text-[#666] uppercase mb-1">Amount (USDT)</label>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                  />
                 </div>
 
                 {errorMsg && (
-                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-bold uppercase tracking-widest text-center">
+                  <div className="p-2 border border-red-500/30 bg-red-500/5 text-[10px] font-mono text-red-400">
                     {errorMsg}
                   </div>
                 )}
 
-                {/* Submit Action */}
                 <button
                   onClick={handleBridge}
                   disabled={isLoading}
-                  className="w-full py-5 rounded-[24px] bg-gradient-to-r from-primary-blue via-primary-purple to-primary-pink text-white font-bold font-space uppercase tracking-[0.2em] shadow-xl hover:shadow-glow-blue transition-all active:scale-95 disabled:opacity-50 group"
+                  className="w-full py-3 border border-neon-blue bg-neon-blue/10 text-neon-blue text-[11px] font-mono font-semibold uppercase tracking-wider hover:bg-neon-blue/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
-                     <span className="flex items-center justify-center gap-3">
-                       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
-                       Synchronizing...
-                     </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                       Bridge to {selectedChain?.name}
-                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <span className="flex items-center gap-2">
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-3.5 h-3.5 border border-[#333] border-t-white" />
+                      …
                     </span>
+                  ) : (
+                    <>
+                      Bridge → {selectedChain?.name}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
                   )}
                 </button>
-                
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/5">
-                   <Info className="w-4 h-4 text-white/20" />
-                   <p className="text-[10px] text-white/20 uppercase font-bold tracking-tight">Small XCM delivery fee will be deducted by the target chain.</p>
-                </div>
               </div>
             </div>
           )}
@@ -270,13 +269,13 @@ export default function BridgeButton() {
 
 function StatCard({ label, value, icon, highlight }: { label: string; value: string; icon: React.ReactNode; highlight?: boolean }) {
   return (
-    <div className="px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 shadow-inner">
-       <div className="flex items-center gap-2 mb-2">
+    <div className="px-4 py-3 border border-[#222] bg-black/30">
+       <div className="flex items-center gap-2 mb-1">
           {icon}
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/20">{label}</span>
+          <span className="text-[9px] font-mono text-[#666] uppercase">{label}</span>
        </div>
-       <p className={`text-lg font-bold font-space ${highlight ? 'text-primary-pink' : 'text-white'}`}>
-          {value} <span className="text-[10px] text-white/20 font-mono">USDT</span>
+       <p className={`text-sm font-mono tabular-nums ${highlight ? "text-neon-pink" : "text-white"}`}>
+          {value} <span className="text-[9px] text-[#666]">USDT</span>
        </p>
     </div>
   );

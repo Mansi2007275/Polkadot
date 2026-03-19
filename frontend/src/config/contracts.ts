@@ -16,12 +16,22 @@ export const CONTRACT_ADDRESSES: Record<string, Record<string, Address>> = {
   },
 };
 
+export const NATIVE_ASSET_IDS = {
+  USDT: 1984,
+  USDC: 1337,
+} as const;
+
+export const PRECOMPILE_ADDRESSES = {
+  XCM:     "0x0000000000000000000000000000000000000800" as Address,
+  STAKING: "0x0000000000000000000000000000000000000801" as Address,
+  ASSETS:  "0x0000000000000000000000000000000000000802" as Address,
+} as const;
+
 // ───────────────────────────────────────────────────────────────────────────
 // ABIs
 // ───────────────────────────────────────────────────────────────────────────
 
 export const STREAM_ABI = [
-  // Views
   {
     name: "balanceOf",
     type: "function",
@@ -59,7 +69,6 @@ export const STREAM_ABI = [
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
   },
-  // Writes
   {
     name: "createStream",
     type: "function",
@@ -104,7 +113,6 @@ export const STREAM_ABI = [
     inputs: [{ name: "streamId", type: "uint256" }],
     outputs: [],
   },
-  // Events
   {
     name: "StreamCreated",
     type: "event",
@@ -224,6 +232,34 @@ export const SUBSIDY_ABI = [
     inputs: [{ name: "depositor", type: "address" }],
     outputs: [{ name: "", type: "uint256" }],
   },
+  {
+    name: "currentApyBps",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "dynamicApyBps",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "realYieldReceived",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "totalRealYield",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
 ] as const;
 
 export const BRIDGE_ABI = [
@@ -238,6 +274,37 @@ export const BRIDGE_ABI = [
       { name: "beneficiary", type: "bytes32" },
     ],
     outputs: [],
+  },
+  {
+    name: "bridgeAssetToParachain",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "assetId",     type: "uint128" },
+      { name: "amount",      type: "uint256" },
+      { name: "destParaId",  type: "uint32"  },
+      { name: "beneficiary", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "syncRealTimeYield",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "getStakingStats",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "pendingRewards_", type: "uint256" },
+      { name: "stakedAmount_",   type: "uint256" },
+      { name: "totalSwept_",     type: "uint256" },
+      { name: "lastSync_",       type: "uint256" },
+    ],
   },
   {
     name: "totalBridgedOut",
@@ -261,6 +328,20 @@ export const BRIDGE_ABI = [
     outputs: [{ name: "", type: "uint256" }],
   },
   {
+    name: "totalRewardsSwept",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "lastYieldSync",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
     name: "BridgeOutInitiated",
     type: "event",
     inputs: [
@@ -269,6 +350,14 @@ export const BRIDGE_ABI = [
       { name: "destParaId",  type: "uint32",  indexed: false },
       { name: "beneficiary", type: "bytes32", indexed: true  },
       { name: "amount",      type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "YieldSynced",
+    type: "event",
+    inputs: [
+      { name: "rewardAmount", type: "uint256", indexed: false },
+      { name: "timestamp",    type: "uint256", indexed: false },
     ],
   },
 ] as const;

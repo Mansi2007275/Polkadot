@@ -6,7 +6,7 @@ import {
   useChainId,
 } from "wagmi";
 import { parseUnits, maxUint256 } from "viem";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { CONTRACT_ADDRESSES, STREAM_ABI, ERC20_ABI } from "../config/contracts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -165,6 +165,44 @@ export function useWithdrawFromStream() {
   );
 
   return { withdraw, txHash, isPending, isConfirming };
+}
+
+// ─── Hook: useRelayerWithdraw (AI Agentic Relayer) ─────────────────────────
+
+export function useRelayerWithdraw() {
+  const [isRelaying, setIsRelaying] = useState(false);
+  const [relayerResult, setRelayerResult] = useState<any>(null);
+
+  const relayWithdraw = useCallback(async (streamId: bigint | number, amount: string) => {
+    setIsRelaying(true);
+    setRelayerResult(null);
+    try {
+      const response = await fetch("http://localhost:8000/relay/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stream_id: Number(streamId),
+          amount,
+        }),
+      });
+      const data = await response.json();
+      setRelayerResult({
+        status: data.status,
+        message: data.message || (data.status === 'success' ? 'Relay transaction successful' : 'Relay request processed'),
+        tx_hash: data.tx_hash
+      });
+    } catch (err) {
+      console.error("Relayer error:", err);
+      setRelayerResult({ 
+        status: 'error', 
+        message: "Relayer connection failed. The AI Agent is currently unreachable. Direct claim is still active." 
+      });
+    } finally {
+      setIsRelaying(false);
+    }
+  }, []);
+
+  return { relayWithdraw, isRelaying, relayerResult };
 }
 
 // ─── Hook: useCancelStream ────────────────────────────────────────────────
