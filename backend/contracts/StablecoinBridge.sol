@@ -394,7 +394,15 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
     function syncRealTimeYield() external nonReentrant {
         if (subsidyPool == address(0)) revert InvalidAddress(subsidyPool);
 
-        uint256 rewardAmount = STAKING_PRECOMPILE.pendingRewards(address(this));
+        // Low-level call to handle missing precompiles on local nodes
+        bytes memory data = abi.encodeWithSelector(IStakingPrecompile.pendingRewards.selector, address(this));
+        (bool success, bytes memory result) = address(STAKING_PRECOMPILE).staticcall(data);
+        
+        uint256 rewardAmount = 0;
+        if (success && result.length >= 32) {
+            rewardAmount = abi.decode(result, (uint256));
+        }
+
         if (rewardAmount == 0) revert NoRewardsAvailable();
 
         bool ok = STAKING_PRECOMPILE.payout(address(this));
@@ -446,8 +454,24 @@ contract StablecoinBridge is ReentrancyGuard, Ownable {
         uint256 totalSwept_,
         uint256 lastSync_
     ) {
-        pendingRewards_ = STAKING_PRECOMPILE.pendingRewards(address(this));
-        stakedAmount_ = STAKING_PRECOMPILE.stakedAmount(address(this));
+        // Safe query for pending rewards
+        bytes memory dataRewards = abi.encodeWithSelector(IStakingPrecompile.pendingRewards.selector, address(this));
+        (bool successR, bytes memory resultR) = address(STAKING_PRECOMPILE).staticcall(dataRewards);
+        if (successR && resultR.length >= 32) {
+            pendingRewards_ = abi.decode(resultR, (uint256));
+        } else {
+            pendingRewards_ = 0;
+        }
+
+        // Safe query for staked amount
+        bytes memory dataStaked = abi.encodeWithSelector(IStakingPrecompile.stakedAmount.selector, address(this));
+        (bool successS, bytes memory resultS) = address(STAKING_PRECOMPILE).staticcall(dataStaked);
+        if (successS && resultS.length >= 32) {
+            stakedAmount_ = abi.decode(resultS, (uint256));
+        } else {
+            stakedAmount_ = 0;
+        }
+
         totalSwept_ = totalRewardsSwept;
         lastSync_ = lastYieldSync;
     }

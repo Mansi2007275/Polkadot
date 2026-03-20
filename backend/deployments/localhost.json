@@ -1,7 +1,9 @@
 {
   "network": "localhost",
-  "timestamp": "2026-03-19T14:07:44.036Z",
+  "timestamp": "2026-03-20T09:22:12.257Z",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "usesNativeAssets": false,
+  "assetsPrecompile": "0x0000000000000000000000000000000000000802",
   "contracts": {
     "SubsidyPool": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
     "MicropaymentStream": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",

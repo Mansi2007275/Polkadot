@@ -120,23 +120,16 @@ export default function StreamForm() {
 
   return (
     <div className="terminal-card p-6">
-      <div className="mb-6">
-        <h2 className="text-sm font-mono font-semibold text-white flex items-center gap-2">
-          <Send className="w-4 h-4 text-neon-pink" />
-          Create Stream
-        </h2>
-        <p className="text-[10px] font-mono text-[#666] mt-1">
-          Sablier-variant · REVM
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">Create Stream</h2>
+      <p className="text-sm text-gray-500 mb-6">Sablier-variant · REVM</p>
 
-      <div className="flex justify-between items-center mb-6 p-3 bg-black/50 border border-[#222]">
+      <div className="flex justify-between items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex items-center gap-2">
-          <Wallet className="w-3.5 h-3.5 text-[#666]" />
-          <span className="text-[10px] font-mono text-[#666] uppercase">Balance</span>
+          <Wallet className="w-4 h-4 text-gray-500" />
+          <span className="text-sm text-gray-500">Balance</span>
         </div>
-        <span className="text-sm font-mono text-white tabular-nums">
-          {formatUSDT(usdtBalance)} <span className="text-[10px] text-[#666]">USDT</span>
+        <span className="text-sm font-medium text-gray-900 tabular-nums">
+          {formatUSDT(usdtBalance)} <span className="text-gray-500">USDT</span>
         </span>
       </div>
 
@@ -147,13 +140,13 @@ export default function StreamForm() {
             animate={{ opacity: 1 }}
             className="text-center py-8"
           >
-            <div className="w-12 h-12 border border-neon-pink flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-6 h-6 text-neon-pink" />
+            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
             </div>
-            <p className="text-[11px] font-mono text-white mb-6">Stream initialized</p>
+            <p className="text-sm text-gray-900 mb-6">Stream initialized</p>
             <button
               onClick={resetForm}
-              className="px-6 py-2 border border-[#333] text-[11px] font-mono text-[#888] hover:border-[#444] hover:text-white transition-colors"
+              className="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
             >
               New
             </button>
@@ -166,19 +159,19 @@ export default function StreamForm() {
             className="space-y-4"
           >
             <div>
-              <label className="block text-[9px] font-mono text-[#666] uppercase mb-1">Recipient</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Recipient</label>
               <input
                 type="text"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="0x..."
-                className="w-full px-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 disabled={isLoading}
               />
             </div>
 
             <div>
-              <label className="block text-[9px] font-mono text-[#666] uppercase mb-1">Amount (USDT)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount (USDT)</label>
               <input
                 type="number"
                 value={amount}
@@ -186,24 +179,24 @@ export default function StreamForm() {
                 placeholder="0"
                 min="0"
                 step="1"
-                className="w-full px-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 disabled={isLoading}
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-[9px] font-mono text-[#666] uppercase">Duration</label>
+                <label className="text-sm font-medium text-gray-700">Duration</label>
                 <div className="flex gap-1">
                   {durationOptions.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setDuration(opt.value)}
-                      className={`px-2 py-0.5 text-[9px] font-mono transition-colors ${
+                      className={`px-2.5 py-1 text-xs rounded transition-colors ${
                         duration === opt.value
-                          ? "border border-neon-blue text-neon-blue"
-                          : "border border-[#222] text-[#666] hover:text-[#888]"
+                          ? "bg-indigo-100 text-indigo-700 font-medium"
+                          : "text-gray-500 hover:bg-gray-100"
                       }`}
                       disabled={isLoading}
                     >
@@ -214,14 +207,14 @@ export default function StreamForm() {
               </div>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <Clock className="w-3 h-3 text-[#444]" />
+                  <Clock className="w-3 h-3 text-gray-500" />
                 </div>
                 <input
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   placeholder="86400"
-                  className="w-full pl-8 pr-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                  className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   disabled={isLoading}
                 />
               </div>
@@ -234,13 +227,13 @@ export default function StreamForm() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="p-3 bg-black border border-[#222] border-l-2 border-l-neon-pink"
+                  className="p-4 bg-gray-50 border border-gray-200 rounded-lg border-l-4 border-l-indigo-500"
                 >
-                  <p className="text-[9px] font-mono text-neon-pink uppercase mb-2">Technical Preview</p>
-                  <p className="text-[10px] font-mono text-[#666] break-all leading-relaxed">
+                  <p className="text-xs font-medium text-indigo-600 mb-2">Technical Preview</p>
+                  <p className="text-xs font-mono text-gray-600 break-all leading-relaxed">
                     {scalePayload}
                   </p>
-                  <p className="text-[9px] font-mono text-[#444] mt-2">
+                  <p className="text-xs text-gray-500 mt-2">
                     createStream calldata · bridge helpers
                   </p>
                 </motion.div>
@@ -248,16 +241,16 @@ export default function StreamForm() {
             </AnimatePresence>
 
             {errorMsg && (
-              <div className="p-2 border border-red-500/30 bg-red-500/5 flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                <p className="text-[10px] font-mono text-red-400">{errorMsg}</p>
+              <div className="p-3 border border-red-200 bg-red-50 rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <p className="text-sm text-red-700">{errorMsg}</p>
               </div>
             )}
 
             {isLoading && (
-              <div className="flex items-center justify-center gap-2 py-2">
-                <Loader2 className="w-3.5 h-3.5 text-neon-pink animate-spin" />
-                <p className="text-[10px] font-mono text-[#666]">
+              <div className="flex items-center justify-center gap-2 py-3">
+                <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                <p className="text-sm text-gray-500">
                   {step === "approving" ? "Approve…" : "Create…"}
                 </p>
               </div>
@@ -266,7 +259,7 @@ export default function StreamForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 border border-neon-pink bg-neon-pink/10 text-neon-pink text-[11px] font-mono font-semibold uppercase tracking-wider hover:bg-neon-pink/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "…" : "Deploy Stream"}
             </button>

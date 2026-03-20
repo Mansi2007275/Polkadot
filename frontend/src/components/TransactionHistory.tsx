@@ -146,30 +146,30 @@ export default function TransactionHistory() {
            <History className="w-6 h-6 text-primary-pink" />
            Protocol Activity
         </h2>
-        <p className="text-sm text-white/40 mt-1 font-inter">
+        <p className="text-sm text-gray-900/40 mt-1 font-inter">
           Realtime on-chain events from <span className="text-primary-blue font-bold">Paseo Layer.</span>
         </p>
       </div>
 
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-10 h-10 border-4 border-white/5 border-t-primary-pink rounded-full animate-spin shadow-glow-pink" />
-          <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Indexing Ledger...</p>
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-pink rounded-full animate-spin shadow-glow-pink" />
+          <p className="text-[10px] font-black text-gray-900/20 uppercase tracking-[0.2em]">Indexing Ledger...</p>
         </div>
       )}
 
       {error && (
         <div className="p-6  bg-red-500/5 border border-red-500/20 text-center">
           <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
-          <p className="text-red-400 text-sm font-bold uppercase tracking-widest">ledger Sync Failed</p>
-          <p className="text-white/20 text-xs mt-1">{(error as Error).message}</p>
+          <p className="text-red-600 text-sm font-semibold">Sync failed</p>
+          <p className="text-gray-600 text-sm mt-1">{(error as Error).message}</p>
         </div>
       )}
 
       {events && events.length === 0 && !isLoading && (
-        <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 ">
-          <FileText className="w-12 h-12 text-white/10 mx-auto mb-4" />
-          <p className="text-white/40 font-medium uppercase tracking-widest text-xs">No activity signatures detected in this epoch</p>
+        <div className="text-center py-20 bg-gray-100 border border-dashed border-gray-200 ">
+          <FileText className="w-12 h-12 text-gray-900/10 mx-auto mb-4" />
+          <p className="text-gray-900/40 font-medium uppercase tracking-widest text-xs">No activity signatures detected in this epoch</p>
         </div>
       )}
 
@@ -204,7 +204,7 @@ function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: n
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="group flex flex-col sm:flex-row sm:items-center gap-4 p-5  bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/20 transition-all"
+      className="group flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all"
     >
       <div className={`w-12 h-12 rounded-xl ${typeConfig.bg} flex items-center justify-center ${typeConfig.color} shadow-sm transition-transform group-hover:scale-110`}>
         {typeConfig.icon}
@@ -216,35 +216,35 @@ function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: n
             {typeConfig.label}
           </span>
           {tx.streamId !== undefined && (
-            <span className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-mono font-bold text-white/40 border border-white/5">
+            <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-mono font-bold text-gray-900/40 border border-gray-200">
               STREAM-ID: {tx.streamId.toString()}
             </span>
           )}
           {tx.type === "StreamWithdrawn" && tx.gasSubsidised && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-blue/10 border border-primary-blue/20 text-[10px] font-black uppercase tracking-tighter text-primary-blue">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-50 text-xs font-medium text-indigo-700">
               <ShieldCheck className="w-3 h-3" />
               Gas Substituted
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono text-white/20 uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-[10px] font-mono text-gray-900/20 uppercase tracking-widest">
           <span>Block: {tx.blockNumber.toString()}</span>
           <span className="opacity-50">·</span>
-          <span className="hover:text-white/60 transition-colors cursor-help">{tx.hash.slice(0, 14)}…{tx.hash.slice(-10)}</span>
+          <span className="hover:text-gray-600 transition-colors cursor-help">{tx.hash.slice(0, 14)}…{tx.hash.slice(-10)}</span>
         </div>
       </div>
 
       <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 flex-shrink-0">
         {tx.amount !== undefined && (
-          <p className="text-lg font-bold font-space text-white">
-            {formatUSDT(tx.amount)} <span className="text-[10px] text-white/20 font-mono">USDT</span>
+          <p className="text-lg font-bold font-space text-gray-900">
+            {formatUSDT(tx.amount)} <span className="text-[10px] text-gray-900/20 font-mono">USDT</span>
           </p>
         )}
         <a
           href={`${explorerBase}/${tx.hash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-primary-pink transition-colors group/link"
+          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900/20 hover:text-primary-pink transition-colors group/link"
         >
           Signature
           <ExternalLink className="w-3 h-3 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />

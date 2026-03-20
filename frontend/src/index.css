@@ -3,16 +3,13 @@
 @import "tailwindcss/utilities";
 
 :root {
-  --bg: #050505;
-  --bg-card: #0a0a0a;
-  --border: #222;
-  --border-focus: #333;
-  --neon-pink: #E6007A;
-  --neon-blue: #0070F3;
-  --neon-purple: #7928ca;
-  --neon-green: #00ff88;
-  --text: #e5e5e5;
-  --text-dim: #666;
+  --bg: #fafafa;
+  --bg-card: #ffffff;
+  --border: #e5e7eb;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --text: #111827;
+  --text-muted: #6b7280;
 }
 
 * {
@@ -26,88 +23,38 @@ html {
 
 body {
   margin: 0;
-  font-family: 'JetBrains Mono', 'Sora', ui-monospace, monospace;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
 
-/* Protocol Console: Scan-line overlay */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  opacity: 0.4;
-}
-
-/* Grid background */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 24px 24px;
-  opacity: 0.5;
-}
-
-/* Terminal card */
+/* Card */
 .terminal-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.terminal-card:hover {
-  border-color: var(--border-focus);
-}
-
-/* Neon accent border */
-.border-neon-pink { border-color: var(--neon-pink); }
-.border-neon-blue { border-color: var(--neon-blue); }
-.border-neon-green { border-color: var(--neon-green); }
-
-/* Monospace for data */
-.font-mono, .font-data {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+/* Monospace for addresses, numbers */
+.font-mono {
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
 .scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* RainbowKit */
 [data-rk] button {
-  font-family: 'JetBrains Mono', monospace !important;
-  border-radius: 2px !important;
-}
-
-/* Animations */
-@keyframes flow-dash {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes pulse-neon {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  font-family: inherit !important;
+  border-radius: 8px !important;
 }

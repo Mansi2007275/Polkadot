@@ -125,11 +125,11 @@ export default function BridgeButton() {
       <div className="terminal-card p-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
            <div>
-              <h2 className="text-sm font-mono font-semibold text-white flex items-center gap-2">
+              <h2 className="text-sm font-mono font-semibold text-gray-900 flex items-center gap-2">
                  <Repeat className="w-4 h-4 text-neon-blue" />
                  XCM 0x800
               </h2>
-              <p className="text-[10px] font-mono text-[#666] mt-1">
+              <p className="text-[10px] font-mono text-gray-500 mt-1">
                  ReserveTransferAssets · cross-chain
               </p>
            </div>
@@ -137,7 +137,7 @@ export default function BridgeButton() {
               <StatCard
                  label="Pool Buffer"
                  value={formatUSDT(bridgeBalance as bigint | undefined)}
-                 icon={<Database className="w-4 h-4 text-white/20" />}
+                 icon={<Database className="w-4 h-4 text-gray-900/20" />}
               />
               <StatCard
                  label="Protocol Throughput"
@@ -154,13 +154,13 @@ export default function BridgeButton() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-12 border border-[#222] bg-black/30"
+              className="text-center py-12 border border-gray-200 bg-gray-100"
             >
               <div className="w-12 h-12 border border-neon-pink flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-6 h-6 text-neon-pink" />
               </div>
-              <p className="text-sm font-mono text-white mb-2">XCM dispatched</p>
-              <p className="text-[10px] font-mono text-[#666] mb-6">
+              <p className="text-sm font-mono text-gray-900 mb-2">XCM dispatched</p>
+              <p className="text-[10px] font-mono text-gray-500 mb-6">
                 {selectedChain?.name} · ~12s
               </p>
               <button
@@ -170,7 +170,7 @@ export default function BridgeButton() {
                   setAmount("");
                   setBeneficiary("");
                 }}
-                className="px-6 py-2 border border-[#333] text-[11px] font-mono text-[#888] hover:border-[#444] hover:text-white"
+                className="px-6 py-2 border border-gray-300 text-[11px] font-mono text-gray-600 hover:border-gray-400 hover:text-gray-800"
               >
                 New
               </button>
@@ -180,7 +180,7 @@ export default function BridgeButton() {
               <div className="space-y-8">
                 {/* Destination Selector */}
                 <div className="space-y-4">
-                  <label className="block text-[9px] font-mono text-[#666] uppercase mb-2">Parachain</label>
+                  <label className="block text-[9px] font-mono text-gray-500 uppercase mb-2">Parachain</label>
                   <div className="grid grid-cols-2 gap-3">
                     {PARACHAINS.map((chain) => (
                       <button
@@ -191,18 +191,18 @@ export default function BridgeButton() {
                         className={`p-3 text-left transition-all border ${
                           destParaId === chain.id
                             ? "border-neon-blue bg-neon-blue/10"
-                            : "border-[#222] bg-black/30 text-[#666] hover:border-[#333]"
+                            : "border-gray-200 bg-gray-100 text-gray-500 hover:border-gray-300"
                         }`}
                       >
-                        <p className={`text-[11px] font-mono ${destParaId === chain.id ? "text-white" : "text-[#666]"}`}>{chain.name}</p>
-                        <p className="text-[9px] font-mono text-[#444] mt-0.5">ID: {chain.id}</p>
+                        <p className={`text-[11px] font-mono ${destParaId === chain.id ? "text-gray-900" : "text-gray-500"}`}>{chain.name}</p>
+                        <p className="text-[9px] font-mono text-gray-500 mt-0.5">ID: {chain.id}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="p-3 border border-[#222] bg-black/30">
-                  <p className="text-[10px] font-mono text-[#666]">
+                <div className="p-3 border border-gray-200 bg-gray-100">
+                  <p className="text-[10px] font-mono text-gray-500">
                     XCM V3 · ReserveTransferAssets · 0x0800 → Relay → {selectedChain?.name}
                   </p>
                 </div>
@@ -211,19 +211,19 @@ export default function BridgeButton() {
               <div className="space-y-6">
                 {/* Beneficiary */}
                 <div>
-                  <label className="block text-[9px] font-mono text-[#666] uppercase mb-1">Beneficiary</label>
+                  <label className="block text-[9px] font-mono text-gray-500 uppercase mb-1">Beneficiary</label>
                   <input
                     type="text"
                     value={beneficiary}
                     onChange={(e) => setBeneficiary(e.target.value)}
                     placeholder="0x or SS58..."
                     disabled={isLoading}
-                    className="w-full px-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 text-[11px] font-mono text-gray-900 placeholder-gray-400 focus:border-neon-pink focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-mono text-[#666] uppercase mb-1">Amount (USDT)</label>
+                  <label className="block text-[9px] font-mono text-gray-500 uppercase mb-1">Amount (USDT)</label>
                   <input
                     type="number"
                     value={amount}
@@ -231,7 +231,7 @@ export default function BridgeButton() {
                     placeholder="0"
                     min="0"
                     disabled={isLoading}
-                    className="w-full px-3 py-2.5 bg-black/50 border border-[#222] text-[11px] font-mono text-white placeholder-[#444] focus:border-neon-pink focus:outline-none"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 text-[11px] font-mono text-gray-900 placeholder-gray-400 focus:border-neon-pink focus:outline-none"
                   />
                 </div>
 
@@ -248,7 +248,7 @@ export default function BridgeButton() {
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
-                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-3.5 h-3.5 border border-[#333] border-t-white" />
+                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-3.5 h-3.5 border border-gray-300 border-t-white" />
                       …
                     </span>
                   ) : (
@@ -269,13 +269,13 @@ export default function BridgeButton() {
 
 function StatCard({ label, value, icon, highlight }: { label: string; value: string; icon: React.ReactNode; highlight?: boolean }) {
   return (
-    <div className="px-4 py-3 border border-[#222] bg-black/30">
+    <div className="px-4 py-3 border border-gray-200 bg-gray-100">
        <div className="flex items-center gap-2 mb-1">
           {icon}
-          <span className="text-[9px] font-mono text-[#666] uppercase">{label}</span>
+          <span className="text-[9px] font-mono text-gray-500 uppercase">{label}</span>
        </div>
-       <p className={`text-sm font-mono tabular-nums ${highlight ? "text-neon-pink" : "text-white"}`}>
-          {value} <span className="text-[9px] text-[#666]">USDT</span>
+       <p className={`text-sm font-mono tabular-nums ${highlight ? "text-neon-pink" : "text-gray-900"}`}>
+          {value} <span className="text-[9px] text-gray-500">USDT</span>
        </p>
     </div>
   );

@@ -5,11 +5,9 @@ import { CONTRACT_ADDRESSES, SUBSIDY_ABI, BRIDGE_ABI, STREAM_ABI } from "../conf
 import { useLiveBlockNumber } from "../hooks/useBlockNumber";
 import { YieldFlowSvg } from "./YieldFlowSvg";
 
-/** Bento grid: Live network stats visible with or without wallet */
 export function BentoGrid() {
   const chainId = useChainId();
   const networkKey = chainId === 420420421 ? "paseo" : "hardhat";
-  const blockNumber = useLiveBlockNumber();
 
   const subsidyAddr = CONTRACT_ADDRESSES[networkKey]?.SubsidyPool;
   const bridgeAddr = CONTRACT_ADDRESSES[networkKey]?.StablecoinBridge;
@@ -49,64 +47,34 @@ export function BentoGrid() {
   const stakedDot = stats ? formatUnits(stats[1], 18) : "0";
   const activeStreams = nextStreamId ? Number(nextStreamId) - 1 : 0;
   const bridgedUsdt = totalBridgedOut ? (Number(totalBridgedOut) / 1e6).toFixed(2) : "0";
+  const blockNumber = useLiveBlockNumber();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-      {/* Col 1: Live Staking Yield (0x801) */}
-      <div className="terminal-card p-5">
-        <div className="flex justify-between items-start mb-4">
-          <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">
-            Staking 0x801
-          </span>
-          <span className="text-[9px] font-mono text-neon-green">LIVE</span>
-        </div>
-        <p className="text-2xl font-mono font-semibold text-white mb-1">
-          {apy.toFixed(2)}% <span className="text-[10px] text-[#666]">APY</span>
-        </p>
-        <p className="text-[10px] font-mono text-[#666]">
-          Bonded: {Number(stakedDot).toFixed(4)} DOT
-        </p>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="terminal-card p-6">
+        <p className="text-xs font-medium text-gray-500 mb-1">Staking (0x801)</p>
+        <p className="text-2xl font-semibold text-gray-900">{apy.toFixed(2)}% APY</p>
+        <p className="text-sm text-gray-500 mt-1">Bonded: {Number(stakedDot).toFixed(4)} DOT</p>
         <YieldFlowSvg className="mt-4" />
       </div>
 
-      {/* Col 2: Active Streams */}
-      <div className="terminal-card p-5">
-        <div className="flex justify-between items-start mb-4">
-          <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">
-            Micropayment Streams
-          </span>
-        </div>
-        <p className="text-2xl font-mono font-semibold text-white mb-1">
-          {activeStreams} <span className="text-[10px] text-[#666]">active</span>
-        </p>
-        <p className="text-[10px] font-mono text-[#666]">
-          Sablier-variant · REVM
-        </p>
+      <div className="terminal-card p-6">
+        <p className="text-xs font-medium text-gray-500 mb-1">Micropayment Streams</p>
+        <p className="text-2xl font-semibold text-gray-900">{activeStreams} active</p>
+        <p className="text-sm text-gray-500 mt-1">Sablier-variant · REVM</p>
       </div>
 
-      {/* Col 3: XCM Bridge Throughput */}
-      <div className="terminal-card p-5">
-        <div className="flex justify-between items-start mb-4">
-          <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">
-            XCM 0x800
-          </span>
-        </div>
-        <p className="text-2xl font-mono font-semibold text-white mb-1">
-          {bridgedUsdt} <span className="text-[10px] text-[#666]">USDT</span>
-        </p>
-        <p className="text-[10px] font-mono text-[#666]">
-          Total bridged out
-        </p>
+      <div className="terminal-card p-6">
+        <p className="text-xs font-medium text-gray-500 mb-1">XCM Bridge (0x800)</p>
+        <p className="text-2xl font-semibold text-gray-900">{bridgedUsdt} USDT</p>
+        <p className="text-sm text-gray-500 mt-1">Total bridged out</p>
       </div>
 
-      {/* Block height bar */}
-      <div className="md:col-span-3 terminal-card px-5 py-3 flex items-center justify-between">
-        <span className="text-[10px] font-mono text-[#666] uppercase tracking-widest">
-          Paseo · Block
-        </span>
-        <span className="text-sm font-mono text-white tabular-nums">
+      <div className="md:col-span-3 terminal-card px-6 py-4 flex items-center justify-between">
+        <p className="text-sm text-gray-500">Paseo Block</p>
+        <p className="text-base font-mono font-medium text-gray-900 tabular-nums">
           {blockNumber?.toLocaleString() ?? "—"}
-        </span>
+        </p>
       </div>
     </div>
   );

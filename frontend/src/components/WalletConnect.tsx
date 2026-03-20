@@ -4,30 +4,23 @@ import { useAccount, useBalance } from "wagmi";
 
 export default function WalletConnect() {
   const { address, isConnected } = useAccount();
-  const { data: balance } = useBalance({
-    address: address,
-  });
+  const { data: balance } = useBalance({ address });
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-4">
       {isConnected && balance && (
-        <div className="hidden sm:flex items-center gap-2 px-3 py-2 border border-[#222]">
-          <div className="w-1.5 h-1.5 bg-neon-green" />
-          <div className="flex flex-col">
-            <span className="text-[9px] font-mono text-[#666] uppercase">Paseo</span>
-            <span className="text-[11px] font-mono text-white tabular-nums">
-              {parseFloat(balance.formatted).toFixed(4)} <span className="text-[9px] text-[#666]">{balance.symbol}</span>
-            </span>
-          </div>
+        <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="text-sm font-medium text-gray-700 tabular-nums">
+            {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
+          </span>
         </div>
       )}
-      <div className="border border-[#222] p-0.5 hover:border-neon-pink transition-colors">
-        <ConnectButton
-            accountStatus="address"
-            chainStatus="icon"
-            showBalance={false}
-          />
-      </div>
+      <ConnectButton
+        accountStatus="address"
+        chainStatus="icon"
+        showBalance={false}
+      />
     </div>
   );
 }

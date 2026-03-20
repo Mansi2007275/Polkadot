@@ -159,27 +159,27 @@ export default function SubsidyPoolStatus() {
     <div className="max-w-5xl mx-auto space-y-8">
       {/* ── Pool Header & Stats ── */}
       <div className="terminal-card p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-pink/5 blur-[100px] -z-10" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[100px] -z-10" />
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
            <div>
               <h2 className="text-3xl font-bold font-space flex items-center gap-4">
-                 <Database className="w-8 h-8 text-primary-pink" />
+                 <Database className="w-8 h-8 text-indigo-600" />
                  Subsidy Liquidity Pool
               </h2>
-              <p className="text-white/40 mt-3 max-w-xl font-inter leading-relaxed">
+              <p className="text-gray-500 mt-3 max-w-xl font-inter leading-relaxed">
                  Earn protocol-level yield from live validator staking on Polkadot Hub.
                  Depositors empower zero-fee micropayments across the network.
               </p>
            </div>
            <div className="flex gap-4">
-             <div className={`${isLiveYield ? 'bg-green-500/10 border-green-500/30' : 'bg-primary-pink/10 border-primary-pink/20'} border px-6 py-3  flex items-center gap-3`}>
-                <TrendingUp className={`w-5 h-5 ${isLiveYield ? 'text-green-400' : 'text-primary-pink'}`} />
+             <div className={`${isLiveYield ? 'bg-green-500/10 border-green-500/30' : 'bg-indigo-600/10 border-indigo-600/20'} border px-6 py-3  flex items-center gap-3`}>
+                <TrendingUp className={`w-5 h-5 ${isLiveYield ? 'text-green-400' : 'text-indigo-600'}`} />
                 <div className="flex flex-col">
-                   <span className={`text-[10px] font-black uppercase tracking-widest ${isLiveYield ? 'text-green-400/60' : 'text-primary-pink/60'}`}>
+                   <span className={`text-[10px] font-black uppercase tracking-widest ${isLiveYield ? 'text-green-400/60' : 'text-indigo-600/60'}`}>
                      {isLiveYield ? 'Live Staking APY' : 'Estimated APY'}
                    </span>
-                   <span className="text-xl font-bold font-space text-white">{apy.toFixed(2)}%</span>
+                   <span className="text-xl font-bold font-space text-gray-900">{apy.toFixed(2)}%</span>
                 </div>
              </div>
              {isLiveYield && (
@@ -221,17 +221,17 @@ export default function SubsidyPoolStatus() {
 
         {/* ── Gas Savings Tracker (real-time, prominent) ── */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 bg-primary-blue/10 border-2 border-primary-blue/40 ring-2 ring-primary-blue/20">
+          <div className="p-6 bg-blue-600/10 border-2 border-blue-600/40 ring-2 ring-blue-600/20">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-primary-blue/20 flex items-center justify-center ring-2 ring-primary-blue/30">
-                <Zap className="w-10 h-10 text-primary-blue" />
+              <div className="w-16 h-16 bg-blue-600/20 flex items-center justify-center ring-2 ring-blue-600/30">
+                <Zap className="w-10 h-10 text-blue-600" />
               </div>
               <div className="flex-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-blue/80 mb-1">Signatures Substituted</p>
-                <p className="text-2xl font-black font-space text-white tabular-nums">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/80 mb-1">Signatures Substituted</p>
+                <p className="text-2xl font-black font-space text-gray-900 tabular-nums">
                   {(totalSubsidised as bigint | undefined)?.toString() ?? "0"}
                 </p>
-                <p className="text-xs text-white/50 font-mono mt-1">
+                <p className="text-xs text-gray-500 font-mono mt-1">
                   ~{(Number(totalGas ?? 0n) / 1e6).toFixed(2)}M gas covered
                 </p>
               </div>
@@ -248,12 +248,12 @@ export default function SubsidyPoolStatus() {
                 <p className="text-2xl font-black font-space text-green-400 tabular-nums">
                   ${gasSavedInUsdt}
                 </p>
-                <p className="text-xs text-white/50 font-mono mt-1">
+                <p className="text-xs text-gray-500 font-mono mt-1">
                   ~{gasSavedDot} DOT absorbed by 0x801 yield
                 </p>
               </div>
             </div>
-            <div className="mt-3 h-2.5 w-full rounded-full bg-white/5 overflow-hidden">
+            <div className="mt-3 h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(Number(gasSavedInUsdt) * 10, 100)}%` }}
@@ -266,9 +266,9 @@ export default function SubsidyPoolStatus() {
 
         {/* ── Staking Precompile Stats ── */}
         {stakingStatsArr && (
-          <div className="mt-8 p-6  bg-white/[0.02] border border-white/10">
-            <h4 className="text-sm font-bold font-space text-white/60 uppercase tracking-widest mb-6 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary-purple" />
+          <div className="mt-8 p-6  bg-gray-50 border border-gray-200">
+            <h4 className="text-sm font-bold font-space text-gray-600 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-violet-600" />
               Staking Precompile (0x801) Live Data
             </h4>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -282,9 +282,9 @@ export default function SubsidyPoolStatus() {
 
         {/* ── Real Yield Badge ── */}
         {realYieldReceived != null && (realYieldReceived as bigint) > 0n && (
-          <div className="mt-6 p-4  bg-primary-purple/5 border border-primary-purple/20 flex items-center gap-4">
-            <Flame className="w-5 h-5 text-primary-purple" />
-            <p className="text-xs text-white/60 uppercase tracking-wider font-bold">
+          <div className="mt-6 p-4  bg-violet-600/5 border border-violet-600/20 flex items-center gap-4">
+            <Flame className="w-5 h-5 text-violet-600" />
+            <p className="text-xs text-gray-600 uppercase tracking-wider font-bold">
               {formatUSDT(realYieldReceived as bigint)} USDT swept from live staking yield into the pool
             </p>
           </div>
@@ -294,33 +294,33 @@ export default function SubsidyPoolStatus() {
       {/* ── My Position ── */}
       {address && (
         <div className="terminal-card p-6 relative overflow-hidden">
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-purple/5 blur-[100px] -z-10" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-600/5 blur-[100px] -z-10" />
 
           <h3 className="text-xl font-bold font-space mb-8 flex items-center gap-3">
-             <TrendingUp className="w-5 h-5 text-primary-purple" />
+             <TrendingUp className="w-5 h-5 text-violet-600" />
              My Protocol Position
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div className="p-6  bg-white/[0.03] border border-white/5">
-               <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-3 ml-1">Asset Stake</p>
+            <div className="p-6  bg-gray-50 border border-gray-200">
+               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 ml-1">Asset Stake</p>
                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold font-space text-white">{formatUSDT((myDeposit as any)?.[0])}</span>
-                  <span className="text-xs text-white/20 uppercase font-mono tracking-tighter">USDT</span>
+                  <span className="text-2xl font-bold font-space text-gray-900">{formatUSDT((myDeposit as any)?.[0])}</span>
+                  <span className="text-xs text-gray-400 uppercase font-mono tracking-tighter">USDT</span>
                </div>
             </div>
-            <div className="p-6  bg-white/[0.03] border border-white/5">
-               <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-3 ml-1">Pool Ownership</p>
+            <div className="p-6  bg-gray-50 border border-gray-200">
+               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 ml-1">Pool Ownership</p>
                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold font-space text-white">{((Number(shareBps ?? 0n)) / 100).toFixed(2)}</span>
-                  <span className="text-xs text-white/20 uppercase font-mono tracking-tighter">%</span>
+                  <span className="text-2xl font-bold font-space text-gray-900">{((Number(shareBps ?? 0n)) / 100).toFixed(2)}</span>
+                  <span className="text-xs text-gray-400 uppercase font-mono tracking-tighter">%</span>
                </div>
             </div>
-            <div className="p-6  bg-primary-pink/5 border border-primary-pink/20 shadow-glow-pink/10">
-               <p className="text-[10px] font-black uppercase tracking-widest text-primary-pink mb-3 ml-1">Claimable Rewards</p>
+            <div className="p-6  bg-indigo-600/5 border border-indigo-600/20 ">
+               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3 ml-1">Claimable Rewards</p>
                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold font-space text-white">{formatUSDT(pendingYield as bigint | undefined)}</span>
-                  <span className="text-xs text-white/20 uppercase font-mono tracking-tighter">USDT</span>
+                  <span className="text-2xl font-bold font-space text-gray-900">{formatUSDT(pendingYield as bigint | undefined)}</span>
+                  <span className="text-xs text-gray-400 uppercase font-mono tracking-tighter">USDT</span>
                </div>
             </div>
           </div>
@@ -328,19 +328,19 @@ export default function SubsidyPoolStatus() {
           {/* Interaction Forms */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
             <div className="space-y-3">
-              <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Deposit Asset</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Deposit Asset</label>
               <div className="flex gap-3">
                 <input
                   type="number"
                   value={depositAmt}
                   onChange={(e) => setDepositAmt(e.target.value)}
                   placeholder="0.00"
-                  className="flex-1 px-5 py-4  bg-white/[0.03] border border-white/10 text-white text-sm focus:border-primary-pink/50 focus:bg-white/[0.05] focus:outline-none transition-all font-space"
+                  className="flex-1 px-5 py-4  bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-gray-100 focus:outline-none transition-all font-space"
                 />
                 <button
                   onClick={handleDeposit}
                   disabled={depositing || approving}
-                  className="px-8 py-4  bg-gradient-to-r from-primary-pink to-primary-purple text-white text-sm font-bold font-space hover:shadow-glow-pink transition-all active:scale-95 disabled:opacity-50"
+                  className="px-8 py-4  bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-bold font-space hover:shadow-glow-pink transition-all active:scale-95 disabled:opacity-50"
                 >
                   {depositing ? "Wait..." : "Stake"}
                 </button>
@@ -348,19 +348,19 @@ export default function SubsidyPoolStatus() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">Withdraw Shares</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Withdraw Shares</label>
               <div className="flex gap-3">
                 <input
                   type="number"
                   value={withdrawAmt}
                   onChange={(e) => setWithdrawAmt(e.target.value)}
                   placeholder="Shares..."
-                  className="flex-1 px-5 py-4  bg-white/[0.03] border border-white/10 text-white text-sm focus:border-white/30 focus:bg-white/[0.05] focus:outline-none transition-all font-space"
+                  className="flex-1 px-5 py-4  bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:border-gray-300 focus:bg-gray-100 focus:outline-none transition-all font-space"
                 />
                 <button
                   onClick={handleWithdraw}
                   disabled={withdrawing}
-                  className="px-8 py-4  border border-white/10 text-white/40 text-sm font-bold font-space hover:text-white hover:bg-white/5 transition-all active:scale-95 disabled:opacity-50"
+                  className="px-8 py-4  border border-gray-200 text-gray-500 text-sm font-bold font-space hover:text-gray-800 hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
                 >
                   {withdrawing ? "Wait..." : "Unstake"}
                 </button>
@@ -377,7 +377,7 @@ export default function SubsidyPoolStatus() {
                 exit={{ opacity: 0, y: 10 }}
                 onClick={handleClaimYield}
                 disabled={claiming}
-                className="w-full py-5  bg-gradient-to-r from-primary-purple to-primary-blue text-white font-bold font-space uppercase tracking-[0.2em] shadow-xl hover:shadow-glow-blue transition-all active:scale-95 disabled:opacity-50 group"
+                className="w-full py-5  bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold font-space uppercase tracking-[0.2em] shadow-xl hover:shadow-glow-blue transition-all active:scale-95 disabled:opacity-50 group"
               >
                 {claiming
                   ? "Distributing Rewards..."
@@ -386,9 +386,9 @@ export default function SubsidyPoolStatus() {
             )}
           </AnimatePresence>
 
-          <div className="mt-8 flex items-center gap-3 p-4  bg-white/5 border border-white/5">
-             <Info className="w-4 h-4 text-white/20" />
-             <p className="text-[10px] text-white/20 uppercase font-bold tracking-tight">
+          <div className="mt-8 flex items-center gap-3 p-4  bg-gray-100 border border-gray-200">
+             <Info className="w-4 h-4 text-gray-400" />
+             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">
                Your stake powers the network-wide subsidy layer. Yield is sourced from Staking Precompile (0x801) rewards.
              </p>
           </div>
@@ -404,14 +404,14 @@ function PoolStat({
   icon: React.ReactNode; label: string; value: string; unit: string; active?: boolean;
 }) {
   return (
-    <div className={`p-6  border transition-all ${active ? 'bg-primary-pink/5 border-primary-pink/30 shadow-glow-pink/10' : 'bg-white/[0.02] border-white/5'}`}>
-       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-4 ${active ? 'bg-primary-pink/10 text-primary-pink' : 'bg-white/5 text-white/20'}`}>
+    <div className={`p-6  border transition-all ${active ? 'bg-indigo-600/5 border-indigo-600/30 ' : 'bg-gray-50 border-gray-200'}`}>
+       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-4 ${active ? 'bg-indigo-600/10 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
           {icon}
        </div>
-       <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2">{label}</p>
+       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</p>
        <div className="flex items-baseline gap-1.5">
-          <span className={`text-xl font-bold font-space ${active ? 'text-white' : 'text-white/80'}`}>{value}</span>
-          <span className="text-[10px] text-white/20 uppercase font-mono">{unit}</span>
+          <span className={`text-xl font-bold font-space ${active ? 'text-gray-900' : 'text-gray-700'}`}>{value}</span>
+          <span className="text-[10px] text-gray-400 uppercase font-mono">{unit}</span>
        </div>
     </div>
   );
@@ -419,9 +419,9 @@ function PoolStat({
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-      <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-2">{label}</p>
-      <p className="text-sm font-bold font-space text-white/80 truncate">{value}</p>
+    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+      <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">{label}</p>
+      <p className="text-sm font-bold font-space text-gray-700 truncate">{value}</p>
     </div>
   );
 }

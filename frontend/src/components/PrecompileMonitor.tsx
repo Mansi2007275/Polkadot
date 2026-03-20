@@ -26,29 +26,19 @@ export function PrecompileMonitor({ logs, maxLogs = 12 }: PrecompileMonitorProps
   const displayLogs = logs.slice(-maxLogs).reverse();
 
   return (
-    <div className="terminal-card p-4 overflow-hidden">
-      <div className="flex justify-between items-center mb-3 border-b border-[#222] pb-2">
-        <span className="text-[10px] font-mono font-semibold text-neon-pink uppercase tracking-widest">
-          Precompile Feed
-        </span>
-        <span className="text-[9px] font-mono text-[#666]">
-          PVM · SCALE-encoded
-        </span>
+    <div className="terminal-card p-5">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-semibold text-gray-900">Precompile Feed</h3>
+        <span className="text-xs text-gray-500">PVM</span>
       </div>
-      <div className="space-y-2 max-h-[280px] overflow-y-auto scrollbar-none">
+      <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {displayLogs.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-[10px] font-mono text-[#444] uppercase tracking-widest">
-              No precompile calls yet
-            </p>
-            <p className="text-[9px] font-mono text-[#333] mt-1">
-              Bridge or stream activity will appear here
-            </p>
+          <div className="py-10 text-center">
+            <p className="text-sm text-gray-500">No precompile calls yet</p>
+            <p className="text-xs text-gray-400 mt-1">Bridge or stream activity will appear here</p>
           </div>
         ) : (
-          displayLogs.map((log) => (
-            <PrecompileLogRow key={log.id} log={log} />
-          ))
+          displayLogs.map((log) => <PrecompileLogRow key={log.id} log={log} />)
         )}
       </div>
     </div>
@@ -56,40 +46,34 @@ export function PrecompileMonitor({ logs, maxLogs = 12 }: PrecompileMonitorProps
 }
 
 function PrecompileLogRow({ log }: { log: PrecompileLog }) {
-  const targetLabel = TARGET_LABELS[log.target];
   const borderColor =
-    log.target === "0x800"
-      ? "border-l-neon-blue"
-      : log.target === "0x801"
-        ? "border-l-neon-pink"
-        : "border-l-neon-green";
+    log.target === "0x800" ? "border-l-indigo-500" :
+    log.target === "0x801" ? "border-l-violet-500" :
+    "border-l-emerald-500";
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      className={`bg-black/50 p-3 border-l-2 ${borderColor} font-mono text-[10px]`}
+      className={`bg-gray-50 p-3 rounded-r border-l-2 ${borderColor} text-sm`}
     >
-      <div className="flex justify-between text-neon-pink mb-1.5">
-        <span>EXECUTE: {log.method}</span>
-        <span>TARGET: {log.target}</span>
+      <div className="flex justify-between text-gray-700 font-medium mb-1">
+        <span>{log.method}</span>
+        <span className="font-mono text-xs">{log.target}</span>
       </div>
-      <div className="text-[#888] break-all leading-relaxed">
-        {log.payload}
-      </div>
+      <div className="font-mono text-xs text-gray-600 break-all">{log.payload}</div>
     </motion.div>
   );
 }
 
-/** Simulate SCALE encoding for display (mirrors bridge helpers) */
 export function mockScalePayload(
   method: "createStream" | "bridgeToParachain" | "transfer" | "xcmSend",
   params: Record<string, unknown>
 ): string {
-  const base = "0x03"; // V3
+  const base = "0x03";
   const parts: string[] = [base];
   if (method === "createStream") {
-    parts.push("04", "01", "01", "00"); // compact, interior
+    parts.push("04", "01", "01", "00");
     parts.push(
       (params.recipient as string)?.slice(2, 10) ?? "00000000",
       "…",
@@ -97,10 +81,10 @@ export function mockScalePayload(
     );
   } else if (method === "bridgeToParachain") {
     parts.push("01", "01", "00", (params.destParaId as number)?.toString(16).padStart(2, "0") ?? "00");
-    parts.push("04", "32", "05"); // GeneralIndex, compact
+    parts.push("04", "32", "05");
   } else if (method === "transfer") {
-    parts.push("01", "01", "05"); // GeneralIndex
-    parts.push((params.assetId as number)?.toString(16) ?? "7c0"); // 1984
+    parts.push("01", "01", "05");
+    parts.push((params.assetId as number)?.toString(16) ?? "7c0");
   } else {
     parts.push("01", "01", "00", "…");
   }

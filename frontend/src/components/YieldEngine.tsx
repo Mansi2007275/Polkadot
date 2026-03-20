@@ -146,7 +146,7 @@ export default function YieldEngine() {
               <BarChart3 className="w-8 h-8 text-primary-pink" />
               Yield Engine Analytics
             </h2>
-            <p className="text-white/40 mt-3 max-w-xl font-inter leading-relaxed">
+            <p className="text-gray-900/40 mt-3 max-w-xl font-inter leading-relaxed">
               Real-time analysis of TVL in the staking precompile versus gas costs
               absorbed for network users. Live data from Precompile 0x801.
             </p>
@@ -176,15 +176,15 @@ export default function YieldEngine() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-pink/60">Total Value Locked</p>
-                <p className="text-[10px] text-white/20 font-mono">SubsidyPool + Staking</p>
+                <p className="text-[10px] text-gray-400 font-mono">SubsidyPool + Staking</p>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold font-space text-white">${tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className="text-xs text-white/20 uppercase font-mono">USDT</span>
+              <span className="text-4xl font-bold font-space text-gray-900">${tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="text-xs text-gray-400 uppercase font-mono">USDT</span>
             </div>
             {stakedDot > 0 && (
-              <p className="text-xs text-white/30 mt-3 font-mono">+ {stakedDot.toFixed(4)} DOT staked via 0x801</p>
+              <p className="text-xs text-gray-500 mt-3 font-mono">+ {stakedDot.toFixed(4)} DOT staked via 0x801</p>
             )}
           </motion.div>
 
@@ -202,14 +202,14 @@ export default function YieldEngine() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400/60">Total Gas Saved</p>
-                <p className="text-[10px] text-white/20 font-mono">DOT at ${DOT_PRICE}/DOT</p>
+                <p className="text-[10px] text-gray-400 font-mono">DOT at ${DOT_PRICE}/DOT</p>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold font-space text-white">${displayedSaved.toFixed(2)}</span>
-              <span className="text-xs text-white/20 uppercase font-mono">USD</span>
+              <span className="text-4xl font-bold font-space text-gray-900">${displayedSaved.toFixed(2)}</span>
+              <span className="text-xs text-gray-400 uppercase font-mono">USD</span>
             </div>
-            <p className="text-xs text-white/30 mt-3 font-mono">{gasSavedDot.toFixed(6)} DOT absorbed by yield pool</p>
+            <p className="text-xs text-gray-500 mt-3 font-mono">{gasSavedDot.toFixed(6)} DOT absorbed by yield pool</p>
           </motion.div>
         </div>
 
@@ -287,14 +287,14 @@ export default function YieldEngine() {
             label="Last Sync"
             value={lastSyncStr}
             unit=""
-            icon={<Clock className="w-5 h-5 text-white/40" />}
+            icon={<Clock className="w-5 h-5 text-gray-900/40" />}
             small
           />
         </div>
 
         {/* Yield Flow Diagram */}
-        <div className="p-8  bg-white/[0.02] border border-white/5">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-6">Yield Flow Architecture</p>
+        <div className="p-8  bg-gray-50 border border-gray-200">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-6">Yield Flow Architecture</p>
           <div className="flex items-center justify-between gap-4 overflow-x-auto pb-4">
             <FlowNode label="Validators" sub="Polkadot Hub" color="pink" />
             <FlowArrow />
@@ -335,15 +335,15 @@ function MetricCard({ icon, label, value, color }: { icon: React.ReactNode; labe
     purple: "bg-primary-purple/5 border-primary-purple/20 text-primary-purple",
     green: "bg-green-500/5 border-green-500/20 text-green-400",
     orange: "bg-orange-500/5 border-orange-500/20 text-orange-400",
-    white: "bg-white/5 border-white/10 text-white/40",
+    white: "bg-gray-100 border-gray-200 text-gray-500",
   };
   const cls = colorMap[color] || colorMap.white;
 
   return (
     <div className={`p-4 rounded-2xl border ${cls}`}>
       <div className="mb-3">{icon}</div>
-      <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-1">{label}</p>
-      <p className="text-lg font-bold font-space text-white truncate">{value}</p>
+      <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">{label}</p>
+      <p className="text-lg font-bold font-space text-gray-900 truncate">{value}</p>
     </div>
   );
 }
@@ -352,11 +352,11 @@ function StakingStat({ label, value, unit, icon, highlight, small }: {
   label: string; value: string; unit: string; icon: React.ReactNode; highlight?: boolean; small?: boolean;
 }) {
   return (
-    <div className={`p-6  border transition-all ${highlight ? 'bg-primary-blue/5 border-primary-blue/30' : 'bg-white/[0.02] border-white/5'}`}>
-      <div className="flex items-center gap-2 mb-4">{icon}<span className="text-[10px] font-black uppercase tracking-widest text-white/20">{label}</span></div>
+    <div className={`p-6  border transition-all ${highlight ? 'bg-primary-blue/5 border-primary-blue/30' : 'bg-gray-50 border-gray-200'}`}>
+      <div className="flex items-center gap-2 mb-4">{icon}<span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</span></div>
       <div className="flex items-baseline gap-1.5">
-        <span className={`font-bold font-space text-white ${small ? 'text-sm' : 'text-xl'}`}>{value}</span>
-        {unit && <span className="text-[10px] text-white/20 uppercase font-mono">{unit}</span>}
+        <span className={`font-bold font-space text-gray-900 ${small ? 'text-sm' : 'text-xl'}`}>{value}</span>
+        {unit && <span className="text-[10px] text-gray-400 uppercase font-mono">{unit}</span>}
       </div>
     </div>
   );
@@ -368,12 +368,12 @@ function FlowNode({ label, sub, color }: { label: string; sub: string; color: st
     purple: "border-primary-purple/30 bg-primary-purple/5",
     blue: "border-primary-blue/30 bg-primary-blue/5",
     green: "border-green-500/30 bg-green-500/5",
-    white: "border-white/20 bg-white/5",
+    white: "border-gray-300 bg-gray-100",
   };
   return (
     <div className={`flex-shrink-0 px-4 py-3 rounded-xl border ${colorMap[color] || colorMap.white} text-center min-w-[100px]`}>
-      <p className="text-xs font-bold font-space text-white">{label}</p>
-      <p className="text-[9px] text-white/30 font-mono mt-0.5">{sub}</p>
+      <p className="text-xs font-bold font-space text-gray-900">{label}</p>
+      <p className="text-[9px] text-gray-500 font-mono mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -384,7 +384,7 @@ function FlowArrow() {
       <motion.div
         animate={{ x: [0, 4, 0] }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="text-white/20"
+        className="text-gray-400"
       >
         <ArrowUp className="w-4 h-4 rotate-90" />
       </motion.div>
@@ -395,9 +395,9 @@ function FlowArrow() {
 function HealthGauge({ label, value, color }: { label: string; value: number; color: string }) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="p-6  bg-white/[0.02] border border-white/5">
-      <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4">{label}</p>
-      <div className="relative h-4 w-full rounded-full bg-white/5 overflow-hidden border border-white/5">
+    <div className="p-6  bg-gray-50 border border-gray-200">
+      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">{label}</p>
+      <div className="relative h-4 w-full rounded-full bg-gray-100 overflow-hidden border border-gray-200">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${clamped}%` }}
@@ -405,7 +405,7 @@ function HealthGauge({ label, value, color }: { label: string; value: number; co
           className={`h-full rounded-full bg-gradient-to-r ${color}`}
         />
       </div>
-      <p className="text-right mt-2 text-sm font-bold font-space text-white/60">{clamped.toFixed(1)}%</p>
+      <p className="text-right mt-2 text-sm font-bold font-space text-gray-600">{clamped.toFixed(1)}%</p>
     </div>
   );
 }
