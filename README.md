@@ -254,7 +254,6 @@ python main.py
 | USDC         | 1337     | 6        |
 
 ---
-
 ## Security
 
 - All fund-moving functions protected by `ReentrancyGuard`
