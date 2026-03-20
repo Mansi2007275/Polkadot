@@ -194,8 +194,7 @@ contract MicropaymentStream is ReentrancyGuard, Ownable {
 
         uint256 duration;
         unchecked { duration = stopTime - startTime; }
-        if (deposit == 0 || deposit % duration != 0)
-            revert InvalidDeposit(deposit, duration);
+        if (deposit == 0) revert InvalidDeposit(deposit, duration);
 
         uint256 ratePerSecond;
         unchecked { ratePerSecond = deposit / duration; }
@@ -364,17 +363,18 @@ contract MicropaymentStream is ReentrancyGuard, Ownable {
      *      tokens for an active stream.
      */
     function _vestedBalance(Stream storage s) internal view returns (uint256) {
+        if (block.timestamp <= s.startTime) return 0;
+        if (block.timestamp >= s.stopTime) return s.deposit - s.withdrawn;
+
         uint256 elapsed;
-        if (block.timestamp <= s.startTime) {
-            return 0;
-        } else if (block.timestamp >= s.stopTime) {
-            unchecked { elapsed = s.stopTime - s.startTime; }
-        } else {
-            unchecked { elapsed = block.timestamp - s.startTime; }
+        uint256 duration;
+        unchecked {
+            elapsed = block.timestamp - s.startTime;
+            duration = s.stopTime - s.startTime;
         }
 
-        uint256 vested;
-        unchecked { vested = elapsed * s.ratePerSecond; }
+        // Higher precision: multiply before divide to handle any remainder
+        uint256 vested = (s.deposit * elapsed) / duration;
 
         if (vested <= s.withdrawn) return 0;
         unchecked { return vested - s.withdrawn; }

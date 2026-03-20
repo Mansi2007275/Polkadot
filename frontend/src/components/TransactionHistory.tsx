@@ -142,19 +142,17 @@ export default function TransactionHistory() {
   return (
     <div className="terminal-card p-6">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold font-space flex items-center gap-3">
-           <History className="w-6 h-6 text-primary-pink" />
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
+           <History className="w-5 h-5 text-indigo-600" />
            Protocol Activity
         </h2>
-        <p className="text-sm text-gray-900/40 mt-1 font-inter">
-          Realtime on-chain events from <span className="text-primary-blue font-bold">Paseo Layer.</span>
-        </p>
+        <p className="text-sm text-gray-500 mt-1">On-chain events from Paseo</p>
       </div>
 
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-pink rounded-full animate-spin shadow-glow-pink" />
-          <p className="text-[10px] font-black text-gray-900/20 uppercase tracking-[0.2em]">Indexing Ledger...</p>
+          <div className="w-10 h-10 border-2 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Loading...</p>
         </div>
       )}
 
@@ -169,7 +167,7 @@ export default function TransactionHistory() {
       {events && events.length === 0 && !isLoading && (
         <div className="text-center py-20 bg-gray-100 border border-dashed border-gray-200 ">
           <FileText className="w-12 h-12 text-gray-900/10 mx-auto mb-4" />
-          <p className="text-gray-900/40 font-medium uppercase tracking-widest text-xs">No activity signatures detected in this epoch</p>
+          <p className="text-sm text-gray-500">No activity yet</p>
         </div>
       )}
 
@@ -216,7 +214,7 @@ function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: n
             {typeConfig.label}
           </span>
           {tx.streamId !== undefined && (
-            <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-mono font-bold text-gray-900/40 border border-gray-200">
+            <span className="px-2 py-0.5 rounded bg-gray-100 text-xs font-mono text-gray-600">
               STREAM-ID: {tx.streamId.toString()}
             </span>
           )}
@@ -227,7 +225,7 @@ function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: n
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono text-gray-900/20 uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
           <span>Block: {tx.blockNumber.toString()}</span>
           <span className="opacity-50">·</span>
           <span className="hover:text-gray-600 transition-colors cursor-help">{tx.hash.slice(0, 14)}…{tx.hash.slice(-10)}</span>
@@ -236,15 +234,15 @@ function TxRow({ tx, chainId, index }: { tx: TxRecord; chainId: number; index: n
 
       <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 flex-shrink-0">
         {tx.amount !== undefined && (
-          <p className="text-lg font-bold font-space text-gray-900">
-            {formatUSDT(tx.amount)} <span className="text-[10px] text-gray-900/20 font-mono">USDT</span>
+          <p className="text-base font-semibold text-gray-900">
+            {formatUSDT(tx.amount)} <span className="text-xs text-gray-500 font-normal">USDT</span>
           </p>
         )}
         <a
           href={`${explorerBase}/${tx.hash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900/20 hover:text-primary-pink transition-colors group/link"
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 transition-colors"
         >
           Signature
           <ExternalLink className="w-3 h-3 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />

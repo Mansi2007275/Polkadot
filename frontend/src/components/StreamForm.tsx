@@ -60,10 +60,7 @@ export default function StreamForm() {
       return false;
     }
     const deposit = BigInt(Math.floor(Number(amount) * 1e6));
-    if (deposit % BigInt(duration) !== 0n) {
-      setErrorMsg("Deposit must divide evenly by duration");
-      return false;
-    }
+    // No strict divisibility check to allow arbitrary (e.g. 1 USDT / 1 Day)
     setErrorMsg("");
     return true;
   };
