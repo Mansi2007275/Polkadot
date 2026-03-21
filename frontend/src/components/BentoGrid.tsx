@@ -1,6 +1,6 @@
 import React from "react";
 import { useReadContract, useChainId } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { CONTRACT_ADDRESSES, SUBSIDY_ABI, BRIDGE_ABI, STREAM_ABI } from "../config/contracts";
 import { DEMO_DATA, DEMO_STREAM_ID } from "../config/demoData";
 import { useLiveBlockNumber } from "../hooks/useBlockNumber";

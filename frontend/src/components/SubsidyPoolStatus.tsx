@@ -99,14 +99,14 @@ export default function SubsidyPoolStatus() {
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
-  const pendingYield = DEMO_MODE && !address ? DEMO_DATA.myPosition.pendingYield : pendingYieldRaw;
+  const pendingYield = getDemoMode() && !address ? DEMO_DATA.myPosition.pendingYield : pendingYieldRaw;
 
   const { data: shareBpsRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "depositorShareBps",
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
-  const shareBps = DEMO_MODE && !address ? DEMO_DATA.myPosition.shareBps : shareBpsRaw;
+  const shareBps = getDemoMode() && !address ? DEMO_DATA.myPosition.shareBps : shareBpsRaw;
 
   // ── Write ──────────────────────────────────────────────────────────────────
 

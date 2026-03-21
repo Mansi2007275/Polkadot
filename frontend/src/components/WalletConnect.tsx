@@ -21,7 +21,6 @@ export default function WalletConnect() {
           accountStatus="address"
           chainStatus="icon"
           showBalance={false}
-          labelStyle={{ fontFamily: 'Press Start 2P, monospace', color: '#d63384', fontWeight: 'bold', fontSize: '0.9rem', letterSpacing: '0.05em' }}
         />
       </div>
     </div>

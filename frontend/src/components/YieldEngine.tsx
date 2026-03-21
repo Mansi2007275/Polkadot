@@ -404,7 +404,7 @@ function FlowArrow() {
   );
 }
 
-function HealthGauge({ label, value, color }: { label: string; value: number; color: string }) {
+function HealthGauge({ label, value, color, labelClass }: { label: string; value: number; color: string; labelClass?: string }) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <div className="p-6 bg-gray-50 border border-gray-200">
