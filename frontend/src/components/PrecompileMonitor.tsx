@@ -26,7 +26,7 @@ export function PrecompileMonitor({ logs, maxLogs = 12 }: PrecompileMonitorProps
   const displayLogs = logs.slice(-maxLogs).reverse();
 
   return (
-    <div className="terminal-card p-5">
+    <div className="p-5 rounded-2xl border-4 border-black bg-white shadow-xl ring-2 ring-pink-200">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-sm font-semibold text-gray-900">Precompile Feed</h3>
         <span className="text-xs text-gray-500">PVM</span>

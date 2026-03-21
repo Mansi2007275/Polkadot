@@ -8,6 +8,10 @@ import {
 import { parseUnits, maxUint256 } from "viem";
 import { useCallback, useState } from "react";
 import { CONTRACT_ADDRESSES, STREAM_ABI, ERC20_ABI } from "../config/contracts";
+import { DEMO_DATA, DEMO_STREAM_ID } from "../config/demoData";
+
+const getDemoMode = () => (window as any).__DEMO_MODE__ === true;
+
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,16 +36,25 @@ export function useStreamBalance(streamId: bigint | undefined) {
   const networkKey = chainId === 420420421 ? "paseo" : "hardhat";
   const address = CONTRACT_ADDRESSES[networkKey]?.MicropaymentStream;
 
-  return useReadContract({
+  const result = useReadContract({
     address,
     abi: STREAM_ABI,
     functionName: "balanceOf",
     args: streamId !== undefined ? [streamId] : undefined,
     query: {
       enabled: streamId !== undefined,
-      refetchInterval: 5_000, // refresh every 5 seconds for live streaming UX
+      refetchInterval: 5_000, 
     },
   });
+
+  if (getDemoMode() && streamId === DEMO_STREAM_ID) {
+    // Return a slightly fluctuating balance for the demo stream
+    const elapsed = BigInt(Math.floor(Date.now() / 1000) - Number(DEMO_DATA.stream.startTime));
+    const balance = elapsed * DEMO_DATA.stream.ratePerSecond;
+    return { ...result, data: balance, isLoading: false, isError: false, status: "success" };
+  }
+
+  return result;
 }
 
 // ─── Hook: useStreamData ─────────────────────────────────────────────────
@@ -51,13 +64,19 @@ export function useStreamData(streamId: bigint | undefined) {
   const networkKey = chainId === 420420421 ? "paseo" : "hardhat";
   const address = CONTRACT_ADDRESSES[networkKey]?.MicropaymentStream;
 
-  return useReadContract({
+  const result = useReadContract({
     address,
     abi: STREAM_ABI,
     functionName: "getStream",
     args: streamId !== undefined ? [streamId] : undefined,
     query: { enabled: streamId !== undefined },
   });
+
+  if (getDemoMode() && (streamId === DEMO_STREAM_ID || streamId === 1n)) {
+    return { ...result, data: DEMO_DATA.stream, isLoading: false, isError: false, status: "success" };
+  }
+
+  return result;
 }
 
 // ─── Hook: useNextStreamId ────────────────────────────────────────────────
@@ -67,12 +86,18 @@ export function useNextStreamId() {
   const networkKey = chainId === 420420421 ? "paseo" : "hardhat";
   const address = CONTRACT_ADDRESSES[networkKey]?.MicropaymentStream;
 
-  return useReadContract({
+  const result = useReadContract({
     address,
     abi: STREAM_ABI,
     functionName: "nextStreamId",
     query: { refetchInterval: 10_000 },
   });
+
+  if (getDemoMode()) {
+    return { ...result, data: DEMO_STREAM_ID + 1n, isLoading: false, isError: false, status: "success" };
+  }
+
+  return result;
 }
 
 // ─── Hook: useCreateStream ────────────────────────────────────────────────

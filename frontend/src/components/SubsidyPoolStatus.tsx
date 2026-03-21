@@ -2,6 +2,10 @@ import React, { useState, useMemo } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { CONTRACT_ADDRESSES, SUBSIDY_ABI, ERC20_ABI, BRIDGE_ABI } from "../config/contracts";
+import { DEMO_DATA } from "../config/demoData";
+
+const getDemoMode = () => (window as any).__DEMO_MODE__ === true;
+
 import { formatUSDT } from "../hooks/useStream";
 import { motion, AnimatePresence } from "framer-motion";
 import { Database, TrendingUp, Zap, ShieldCheck, Wallet, Info, Activity, DollarSign, BarChart3, Clock, Flame } from "lucide-react";
@@ -21,40 +25,47 @@ export default function SubsidyPoolStatus() {
 
   // ── Pool Reads ─────────────────────────────────────────────────────────────
 
-  const { data: poolBalance } = useReadContract({
+  const { data: poolBalanceRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "poolBalance",
     query: { refetchInterval: 10_000 },
   });
+  const poolBalance = getDemoMode() ? DEMO_DATA.pool.poolBalance : poolBalanceRaw;
 
-  const { data: totalSubsidised } = useReadContract({
+  const { data: totalSubsidisedRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "totalSubsidisedTxns",
     query: { refetchInterval: 5_000 },
   });
+  const totalSubsidised = getDemoMode() ? DEMO_DATA.pool.totalSubsidisedTxns : totalSubsidisedRaw;
 
-  const { data: totalGas } = useReadContract({
+  const { data: totalGasRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "totalGasCovered",
     query: { refetchInterval: 5_000 },
   });
+  const totalGas = getDemoMode() ? DEMO_DATA.pool.totalGasCovered : totalGasRaw;
 
-  const { data: totalDeposited } = useReadContract({
+  const { data: totalDepositedRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "totalDeposited",
     query: { refetchInterval: 10_000 },
   });
+  const totalDeposited = getDemoMode() ? DEMO_DATA.pool.totalDeposited : totalDepositedRaw;
 
-  const { data: currentApyBps } = useReadContract({
+  const { data: currentApyBpsRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "currentApyBps",
     query: { refetchInterval: 15_000 },
   });
+  const currentApyBps = getDemoMode() ? DEMO_DATA.pool.currentApyBps : currentApyBpsRaw;
 
-  const { data: dynamicApyBps } = useReadContract({
+  const { data: dynamicApyBpsRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "dynamicApyBps",
     query: { refetchInterval: 15_000 },
   });
+  const dynamicApyBps = getDemoMode() ? DEMO_DATA.pool.dynamicApyBps : dynamicApyBpsRaw;
 
-  const { data: realYieldReceived } = useReadContract({
+  const { data: realYieldReceivedRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "realYieldReceived",
     query: { refetchInterval: 15_000 },
   });
+  const realYieldReceived = getDemoMode() ? DEMO_DATA.pool.realYieldReceived : realYieldReceivedRaw;
 
   const { data: yieldBps } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "BASE_YIELD_BPS",
@@ -62,35 +73,40 @@ export default function SubsidyPoolStatus() {
 
   // ── Staking Stats from Bridge ──────────────────────────────────────────────
 
-  const { data: stakingStats } = useReadContract({
+  const { data: stakingStatsRaw } = useReadContract({
     address: bridgeAddr, abi: BRIDGE_ABI, functionName: "getStakingStats",
     query: { refetchInterval: 15_000 },
   });
+  const stakingStats = getDemoMode() ? DEMO_DATA.staking : stakingStatsRaw;
 
-  const { data: lastYieldSync } = useReadContract({
+  const { data: lastYieldSyncRaw } = useReadContract({
     address: bridgeAddr, abi: BRIDGE_ABI, functionName: "lastYieldSync",
     query: { refetchInterval: 15_000 },
   });
+  const lastYieldSync = getDemoMode() ? DEMO_DATA.staking[3] : lastYieldSyncRaw;
 
   // ── User Position ──────────────────────────────────────────────────────────
 
-  const { data: myDeposit } = useReadContract({
+  const { data: myDepositRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "depositors",
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
+  const myDeposit = getDemoMode() && !address ? DEMO_DATA.myPosition.deposit : myDepositRaw;
 
-  const { data: pendingYield } = useReadContract({
+  const { data: pendingYieldRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "pendingYield",
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
+  const pendingYield = DEMO_MODE && !address ? DEMO_DATA.myPosition.pendingYield : pendingYieldRaw;
 
-  const { data: shareBps } = useReadContract({
+  const { data: shareBpsRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "depositorShareBps",
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10_000 },
   });
+  const shareBps = DEMO_MODE && !address ? DEMO_DATA.myPosition.shareBps : shareBpsRaw;
 
   // ── Write ──────────────────────────────────────────────────────────────────
 
@@ -156,32 +172,32 @@ export default function SubsidyPoolStatus() {
   const lastSyncTime = lastYieldSync ? new Date(Number(lastYieldSync) * 1000).toLocaleString() : "Never";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+     <div className="max-w-5xl mx-auto space-y-8">
       {/* ── Pool Header & Stats ── */}
-      <div className="terminal-card p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[100px] -z-10" />
+      <div className="p-6 relative overflow-hidden border-4 border-black rounded-2xl bg-white shadow-xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-400/10 blur-[100px] -z-10" />
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-           <div>
-              <h2 className="text-3xl font-bold font-space flex items-center gap-4">
-                 <Database className="w-8 h-8 text-indigo-600" />
-                 Subsidy Liquidity Pool
-              </h2>
-              <p className="text-gray-500 mt-3 max-w-xl font-inter leading-relaxed">
-                 Earn protocol-level yield from live validator staking on Polkadot Hub.
-                 Depositors empower zero-fee micropayments across the network.
-              </p>
-           </div>
-           <div className="flex gap-4">
-             <div className={`${isLiveYield ? 'bg-green-500/10 border-green-500/30' : 'bg-indigo-600/10 border-indigo-600/20'} border px-6 py-3  flex items-center gap-3`}>
-                <TrendingUp className={`w-5 h-5 ${isLiveYield ? 'text-green-400' : 'text-indigo-600'}`} />
-                <div className="flex flex-col">
-                   <span className={`text-[10px] font-black uppercase tracking-widest ${isLiveYield ? 'text-green-400/60' : 'text-indigo-600/60'}`}>
-                     {isLiveYield ? 'Live Staking APY' : 'Estimated APY'}
-                   </span>
-                   <span className="text-xl font-bold font-space text-gray-900">{apy.toFixed(2)}%</span>
-                </div>
+          <div>
+            <h2 className="text-3xl font-extrabold font-space flex items-center gap-4 text-pink-600" style={{ fontFamily: 'Press Start 2P, monospace' }}>
+              <Database className="w-8 h-8 text-pink-400" />
+              Subsidy Liquidity Pool
+            </h2>
+            <p className="text-pink-400 mt-3 max-w-xl font-inter leading-relaxed">
+              Earn protocol-level yield from live validator staking on Polkadot Hub.
+              Depositors empower zero-fee micropayments across the network.
+            </p>
+          </div>
+          <div className="flex gap-4">
+           <div className={`${isLiveYield ? 'bg-green-500/10 border-green-500/30' : 'bg-pink-400/10 border-pink-400/40'} border-2 px-6 py-3 flex items-center gap-3 rounded-xl`}> 
+             <TrendingUp className={`w-5 h-5 ${isLiveYield ? 'text-green-400' : 'text-pink-400'}`} />
+             <div className="flex flex-col">
+               <span className={`text-[10px] font-black uppercase tracking-widest ${isLiveYield ? 'text-green-400/60' : 'text-pink-400/80'}`}> 
+                {isLiveYield ? 'Live Staking APY' : 'Estimated APY'}
+               </span>
+               <span className="text-xl font-extrabold font-space text-pink-600" style={{ fontFamily: 'Press Start 2P, monospace' }}>{apy.toFixed(2)}%</span>
              </div>
+           </div>
              {isLiveYield && (
                <div className="bg-green-500/5 border border-green-500/20 px-4 py-2 rounded-xl flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />

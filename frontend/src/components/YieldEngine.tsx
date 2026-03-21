@@ -2,7 +2,10 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useAccount, useReadContract, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { CONTRACT_ADDRESSES, SUBSIDY_ABI, BRIDGE_ABI } from "../config/contracts";
+import { DEMO_DATA } from "../config/demoData";
 import { formatUSDT } from "../hooks/useStream";
+
+const getDemoMode = () => (window as any).__DEMO_MODE__ === true;
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -31,57 +34,66 @@ export default function YieldEngine() {
 
   // ── Pool Reads ─────────────────────────────────────────────────────────────
 
-  const { data: totalDeposited } = useReadContract({
+  const { data: totalDepositedRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "totalDeposited",
     query: { refetchInterval: 10_000 },
   });
+  const totalDeposited = getDemoMode() ? DEMO_DATA.pool.totalDeposited : totalDepositedRaw;
 
-  const { data: poolBalance } = useReadContract({
+  const { data: poolBalanceRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "poolBalance",
     query: { refetchInterval: 10_000 },
   });
+  const poolBalance = getDemoMode() ? DEMO_DATA.pool.poolBalance : poolBalanceRaw;
 
-  const { data: totalSubsidised } = useReadContract({
+  const { data: totalSubsidisedRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "totalSubsidisedTxns",
     query: { refetchInterval: 10_000 },
   });
+  const totalSubsidised = getDemoMode() ? DEMO_DATA.pool.totalSubsidisedTxns : totalSubsidisedRaw;
 
-  const { data: totalGas } = useReadContract({
+  const { data: totalGasRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "totalGasCovered",
     query: { refetchInterval: 10_000 },
   });
+  const totalGas = getDemoMode() ? DEMO_DATA.pool.totalGasCovered : totalGasRaw;
 
-  const { data: currentApyBps } = useReadContract({
+  const { data: currentApyBpsRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "currentApyBps",
     query: { refetchInterval: 15_000 },
   });
+  const currentApyBps = getDemoMode() ? DEMO_DATA.pool.currentApyBps : currentApyBpsRaw;
 
-  const { data: dynamicApyBps } = useReadContract({
+  const { data: dynamicApyBpsRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "dynamicApyBps",
     query: { refetchInterval: 15_000 },
   });
+  const dynamicApyBps = getDemoMode() ? DEMO_DATA.pool.dynamicApyBps : dynamicApyBpsRaw;
 
-  const { data: realYield } = useReadContract({
+  const { data: realYieldRaw } = useReadContract({
     address: subsidyAddr, abi: SUBSIDY_ABI, functionName: "realYieldReceived",
     query: { refetchInterval: 15_000 },
   });
+  const realYield = getDemoMode() ? DEMO_DATA.pool.realYieldReceived : realYieldRaw;
 
   // ── Bridge / Staking Reads ─────────────────────────────────────────────────
 
-  const { data: stakingStats } = useReadContract({
+  const { data: stakingStatsRaw } = useReadContract({
     address: bridgeAddr, abi: BRIDGE_ABI, functionName: "getStakingStats",
     query: { refetchInterval: 15_000 },
   });
+  const stakingStats = getDemoMode() ? DEMO_DATA.staking : stakingStatsRaw;
 
   const { data: totalRewardsSwept } = useReadContract({
     address: bridgeAddr, abi: BRIDGE_ABI, functionName: "totalRewardsSwept",
     query: { refetchInterval: 15_000 },
   });
 
-  const { data: lastYieldSync } = useReadContract({
+  const { data: lastYieldSyncRaw } = useReadContract({
     address: bridgeAddr, abi: BRIDGE_ABI, functionName: "lastYieldSync",
     query: { refetchInterval: 15_000 },
   });
+  const lastYieldSync = getDemoMode() ? DEMO_DATA.staking[3] : lastYieldSyncRaw;
 
   // ── Computed ───────────────────────────────────────────────────────────────
 
@@ -310,16 +322,16 @@ export default function YieldEngine() {
       </div>
 
       {/* ── Protocol Health ── */}
-      <div className="terminal-card p-6">
+      <div className="p-6 rounded-2xl border-4 border-black bg-white">
         <h3 className="text-xl font-bold font-space mb-8 flex items-center gap-3">
           <Globe className="w-5 h-5 text-primary-blue" />
           Protocol Health Score
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <HealthGauge label="Yield Coverage" value={Math.min(100, efficiency * 10)} color="from-green-500 to-green-400" />
-          <HealthGauge label="Pool Utilization" value={tvl > 0 ? Math.min(100, (Number(poolBalance ?? 0n) / 1e6 / tvl) * 100) : 0} color="from-primary-blue to-primary-purple" />
-          <HealthGauge label="Subsidy Efficiency" value={Number(totalSubsidised ?? 0n) > 0 ? Math.min(100, gasSavedUsd / Number(totalSubsidised ?? 1n) * 100) : 0} color="from-primary-pink to-primary-purple" />
+          <HealthGauge label="Yield Coverage" value={Math.min(100, efficiency * 10)} color="from-green-500 to-green-400" labelClass="text-gray-900" />
+          <HealthGauge label="Pool Utilization" value={tvl > 0 ? Math.min(100, (Number(poolBalance ?? 0n) / 1e6 / tvl) * 100) : 0} color="from-primary-blue to-primary-purple" labelClass="text-gray-900" />
+          <HealthGauge label="Subsidy Efficiency" value={Number(totalSubsidised ?? 0n) > 0 ? Math.min(100, gasSavedUsd / Number(totalSubsidised ?? 1n) * 100) : 0} color="from-primary-pink to-primary-purple" labelClass="text-gray-900" />
         </div>
       </div>
     </div>
@@ -395,8 +407,8 @@ function FlowArrow() {
 function HealthGauge({ label, value, color }: { label: string; value: number; color: string }) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="p-6  bg-gray-50 border border-gray-200">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">{label}</p>
+    <div className="p-6 bg-gray-50 border border-gray-200">
+      <p className={`text-[10px] font-black uppercase tracking-widest mb-4 ${typeof labelClass === 'string' ? labelClass : 'text-gray-900'}`}>{label}</p>
       <div className="relative h-4 w-full rounded-full bg-gray-100 overflow-hidden border border-gray-200">
         <motion.div
           initial={{ width: 0 }}

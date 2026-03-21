@@ -116,7 +116,7 @@ export default function StreamForm() {
     : "";
 
   return (
-    <div className="terminal-card p-6">
+    <div className="p-6 rounded-2xl border-4 border-black bg-white shadow-xl ring-2 ring-pink-200">
       <h2 className="text-lg font-semibold text-gray-900 mb-1">Create Stream</h2>
       <p className="text-sm text-gray-500 mb-6">Sablier-variant · REVM</p>
 
@@ -256,7 +256,7 @@ export default function StreamForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3.5 bg-pink-600 text-white text-sm font-extrabold rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-2 border-pink-600"
             >
               {isLoading ? "…" : "Deploy Stream"}
             </button>

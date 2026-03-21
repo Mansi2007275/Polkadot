@@ -23,8 +23,8 @@ export default function Dashboard() {
   const { address } = useAccount();
   const { data: nextId } = useNextStreamId();
 
-  const [streamId, setStreamId] = useState<string>("1");
-  const [viewId, setViewId] = useState<bigint | undefined>(undefined);
+  const [streamId, setStreamId] = useState<string>((window as any).__DEMO_MODE__ ? "888" : "1");
+  const [viewId, setViewId] = useState<bigint | undefined>((window as any).__DEMO_MODE__ ? 888n : undefined);
 
   const handleLookup = () => {
     const n = parseInt(streamId, 10);
@@ -32,7 +32,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="terminal-card p-6">
+    <div className="p-6 rounded-2xl border-4 border-black bg-white shadow-xl ring-2 ring-pink-200">
       <h2 className="text-lg font-semibold text-gray-900 mb-1">Active Streams</h2>
       <p className="text-sm text-gray-500 mb-6">Next ID: <span className="font-mono text-indigo-600">#{nextId?.toString() ?? "—"}</span></p>
 
@@ -47,7 +47,7 @@ export default function Dashboard() {
         />
         <button
           onClick={handleLookup}
-          className="px-5 py-3 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          className="px-5 py-3 bg-pink-600 text-white text-sm font-extrabold rounded-lg hover:bg-pink-700 transition-colors border-2 border-pink-600"
         >
           Inspect
         </button>
@@ -110,7 +110,7 @@ function StreamCard({
         <StreamVisualizer rate={s.ratePerSecond} progress={progress} />
       )}
 
-      <div className="terminal-card p-5 space-y-6">
+      <div className="p-5 space-y-6 rounded-2xl border-4 border-black bg-white shadow-xl ring-2 ring-pink-200">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <span className="px-2 py-1 border border-neon-pink text-[10px] font-mono text-neon-pink">
