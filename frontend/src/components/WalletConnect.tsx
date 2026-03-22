@@ -9,14 +9,14 @@ export default function WalletConnect() {
   return (
     <div className="flex items-center gap-4">
       {isConnected && balance && (
-        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-pink-100 rounded-lg border-2 border-pink-400 shadow-md">
-          <div className="w-2 h-2 rounded-full bg-pink-500" />
-          <span className="text-base font-extrabold text-pink-700 tabular-nums" style={{ fontFamily: 'Press Start 2P, monospace', letterSpacing: '0.05em' }}>
+        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-pink-100 rounded-lg text-pink-600">
+          <div className="w-2 h-2 rounded-full bg-pink-400" />
+          <span className="text-base font-extrabold tabular-nums" style={{ fontFamily: 'Press Start 2P, monospace', letterSpacing: '0.05em' }}>
             {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
           </span>
         </div>
       )}
-      <div className="bg-pink-100 rounded-lg border-2 border-pink-400 px-3 py-1 shadow-md">
+      <div className="bg-pink-100 rounded-lg px-3 py-1">
         <ConnectButton
           accountStatus="address"
           chainStatus="icon"
